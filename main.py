@@ -17,3 +17,16 @@ QuizAPI.io
 
 Anki
 """
+
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()  
+token = os.getenv("DISCORD_TOKEN")
+
+if not token:
+    print("Missing DISCORD_TOKEN. Copy .env.example to .env and add your token.")
+else:
+    print("Token successfully loaded in")
+    # client.run(token)
