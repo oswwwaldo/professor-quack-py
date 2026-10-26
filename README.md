@@ -2,6 +2,12 @@
 
 A discord bot with quiz, pull request matchmaking, code challenging and LLM functionality. It's a bot with a personality—he's also a duck.
 
+## Overview
+
+![Architecture](Untitled-2026-10-26-1632.png)
+
+The app communicates either as a CLI terminal application or as a discord bot (with added functionality)
+
 ## Core
 
 - Multiple-choice questions
