@@ -68,7 +68,8 @@ def main():
         client.run(discord_token)
 
 # id pertains to oswwwaldo's test server to force push new commands, switch this in prod to marcy f26
-TEST_SERVER = discord.Object(id = 1481447736120185036)
+TEST_SERVER_ID = os.getenv('TEST_SERVER_ID')
+TEST_SERVER = discord.Object(id = TEST_SERVER_ID)
 SERVER = TEST_SERVER
 
 class Client(commands.Bot):
