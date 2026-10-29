@@ -10,10 +10,40 @@ Slash commands, views, buttons. Thin: it calls quiz.py and displays results
 import discord
 from discord import app_commands  # noqa: F401
 from discord.ext import commands
+from dotenv import dotenv_values
 
-# from main import TEST_SERVER as SERVER
+is_running: bool = False
 
+def load_config() -> tuple[str, str, str]:
+    env = dotenv_values()
 
+    required_env = {
+        'DISCORD_BOT_TOKEN': env.get('DISCORD_BOT_TOKEN'),
+        'TEST_SERVER_ID': env.get('TEST_SERVER_ID'),
+        'PROD_SERVER_ID': env.get('PROD_SERVER_ID')
+    }
+
+    missing = [label for label, secret in required_env.items() if not secret]
+
+    if missing:
+        raise ValueError(f'Missing environment variables: {', '.join(missing)}')
+
+    print("Token successfully loaded in...")
+    return (
+        required_env['DISCORD_BOT_TOKEN'],
+        required_env['TEST_SERVER_ID'],
+        required_env['PROD_SERVER_ID']
+    )
+
+def run_bot(token, guild_id):
+    client.guild_id = guild_id
+    client.run(token)
+
+def main_menu():
+    print("Waking up Professor Quack.py...")
+    token, test_id, _ = load_config()
+    run_bot(token, test_id)
+    
 class Client(commands.Bot):
 
     async def setup_hook(self):
@@ -139,9 +169,3 @@ async def view_about(interaction: discord.Interaction):
     embed.add_field(name="Author", value="Oswaldo De Los Santos (github.com/oswwwaldo)", inline=False)
     embed.set_footer(text="quack quack quack")
     await interaction.response.send_message(embed = embed)
-
-
-
-def run_bot(token, guild_id):
-    client.guild_id = guild_id
-    client.run(token)

@@ -1,13 +1,8 @@
-import os
-
-from dotenv import load_dotenv
-
 import bot as discord_bot
 import terminal
 
 
 def main() -> None:
-    load_dotenv()  
     prompt_view()
 
 def prompt_view() -> None:
@@ -24,26 +19,7 @@ def prompt_view() -> None:
             case '1':
                 terminal.main_menu()
             case '2':
-                print("Running the discord bot...")
-
-                required_env = { 
-                    'DISCORD_BOT_TOKEN': os.getenv('DISCORD_BOT_TOKEN'),
-                    'TEST_SERVER_ID': os.getenv('TEST_SERVER_ID'),
-                    'PROD_SERVER_ID': os.getenv('PROD_SERVER_ID')
-                }
-
-                missing = [label for label, secret in required_env.items() if not secret]
-
-                if missing:
-                    print(f"Missing environment variables detected, please provide values for: {', '.join(missing)}")
-                else:
-                    print("Token successfully loaded in...")
-                    discord_bot.run_bot(required_env['DISCORD_BOT_TOKEN'], required_env['TEST_SERVER_ID'])
-
-                while discord_bot.is_running:
-                    pass
-
-                print("Shutting the discord bot down...")
+                discord_bot.main_menu()
             case '3':
                 print("Opening API documenation...")
             case '4':
