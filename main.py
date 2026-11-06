@@ -1,36 +1,24 @@
+import api
 import bot as discord_bot
 import terminal
+from terminal import MenuOption
 
-
-def main() -> None:
-    prompt_view()
 
 def prompt_view() -> None:
-    while True:
-        print('\nWelcome:')
-        print('[1] — Start the terminal view')
-        print('[2] — Wake up the discord bot')
-        print('[3] — View API documentation')
-        print('[4] — Credits')
-        print('[5] — Quit')
-        user_input = input("\nSelect an option (1-4)...").strip()
+    options = [
+        MenuOption("Start the terminal view", terminal.main_menu),
+        MenuOption("Wake up the discord bot", discord_bot.main_menu),
+        MenuOption("View API documentation", api.start),
+        MenuOption("Credits", terminal.view_credits),
+        MenuOption("Quit", None),
+    ]
 
-        match user_input:
-            case '1':
-                terminal.main_menu()
-            case '2':
-                discord_bot.main_menu()
-            case '3':
-                print("Opening API documenation...")
-            case '4':
-                terminal.print_credits()
-            case '5':
-                print("Quitting program...")
-                break 
-            case 'exit':
-                break
-            case _:
-                print("Invalid option, please choose (1-4).")
+    while True:
+        terminal.print_menu("Welcome", options)
+        terminal.print_divider("_")
+        is_running = terminal.prompt_user_input(options)
+        if not is_running:
+            break
 
 if __name__ == "__main__":
-    main()
+    prompt_view()

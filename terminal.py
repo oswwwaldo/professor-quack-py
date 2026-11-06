@@ -5,12 +5,21 @@ input(), while, import quiz.py functions
 """
 #endregion
 
+import os
 import shutil
+import sys
+import textwrap
+import time
 from typing import NamedTuple
+from collections.abc import Callable
 
 import quiz
 import storage
 
+
+class MenuOption(NamedTuple):
+    label: str
+    action: Callable[[], None] # Callable is the type hint for functions
 
 class Link(NamedTuple):
     text: str
@@ -30,26 +39,31 @@ def say_hi():
 # print("This is random choice in action")
 # print(quiz.get_random_question(questions))
 
-
 # storage.read_file('questions.json')
 
 def prompt_choice(prompt, options) -> None:
     pass
 
 def ask_question() -> dict:
+    print("Ask a question called")
+
     return quiz.get_random_question(questions)
 
 def quick_start() -> None:
-    pass
+    print("Quick start called")
 
 def select_a_list() -> None:
-    pass
+    print("Select a list called")
 
 def view_high_scores() -> None:
-    pass
+    print("View high scores called")
+
+def view_questions() -> None:
+    print("View questions called")
+
 
 def view_credits() -> None:
-    pass
+    print_credits()
 
 def run_quiz() -> None:
     print("Running quiz...\n\n\n")
@@ -95,35 +109,51 @@ def print_credits() -> None:
     print('\n' * 1)
     print_divider()
 
+def print_menu(title: str, options: list[MenuOption]) -> None:
+    """Print a reuseable menu using the MenuOption class"""
+    print(f'\n{title}:')
+    for number, option in enumerate(options, start=1):
+        print(f"[{number}] — {option.label}")
+
+def prompt_user_input(options: list[MenuOption]) -> bool:
+    user_input = input(f"\nSelect an option (1 - {len(options)})...").strip()
+
+    try:
+        chosen_menu_option = options[int(user_input) - 1]
+        _, func = chosen_menu_option 
+    except NameError:
+        print("Item does not exist in memory")
+        raise
+    except ValueError:
+        print("Not a valid value")
+        raise
+    except IndexError:
+        print(f"\nInvalid input — you entered {user_input}.\nPlease select an option between (1 - {len(options)})...")
+        time.sleep(2.5)
+
+    if func == None:
+        return False
+    else:
+        chosen_menu_option.action()
+        return True
+
+options = [
+    MenuOption("Quick start", quick_start),
+    MenuOption("Select a list", select_a_list),
+    MenuOption("View high scores", view_high_scores),
+    MenuOption("View all questions", view_questions),
+    MenuOption("Credits", view_credits),
+    MenuOption("Return to main menu", None),
+]
+
 def main_menu() -> None:
     """A while loop with user input and menu options"""
     is_running: bool = True
-    while is_running:
-        print('\nCLI/Terminal:')
-        print('[1] — Quick start')
-        print('[2] — Select a list')
-        print('[3] — View high scores')
-        print('[4] — View all questions')
-        print('[5] — Credits')
-        print('[6] — Return to main menu')
-        user_input = input("\nSelect an option (1-6)...").strip()
-
-        match user_input:
-            case '1':
-                pass
-            case '2':
-                pass
-            case '3':
-                pass
-            case '4':
-                pass
-            case '5':
-                print_credits()
-            case '6':
-                is_running = False
-                break
-            case _:
-                print("Invalid option, please choose (1-6).")
+    while True:
+        print_menu("CLI Terminal", options)
+        is_running = prompt_user_input(options)
+        if not is_running:
+            break
 
 
 # size = shutil.get_terminal_size()
@@ -144,5 +174,4 @@ def centered(text: str, fill: str = " ") -> str:
     
 def link(text: str, url: str, end: str = '\n') -> str:
     """Print a clickable URL to the terminal, supported by modern terminals — using the OSC 8 ANSI escape sequence"""
-    # print(f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\", end=end)
     return (f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\")
