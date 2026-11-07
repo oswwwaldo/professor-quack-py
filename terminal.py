@@ -5,8 +5,8 @@ input(), while, import quiz.py functions
 """
 #endregion
 
-import shutil
 import os
+import shutil
 import time
 from collections.abc import Callable
 from typing import NamedTuple
@@ -20,14 +20,14 @@ import storage
 
 class MenuOption(NamedTuple):
     label: str
-    action: Callable[[], None] # Callable is the type hint for functions
+    action: Callable[[], None] | None # Callable is the type hint for functions
+
+
+Controller = Callable[[list[MenuOption], str], int] # Type-hinting for handle_keys/input_controllers
 
 class Link(NamedTuple):
     text: str
     url: str
-
-# is_running: bool = False
-# is_running_test: bool = True
 
 questions = storage.load_questions()
 high_scores = storage.load_high_scores()
@@ -51,17 +51,68 @@ def ask_question() -> dict:
     return quiz.get_random_question(questions)
 
 def quick_start() -> None:
-    print("Quick start called")
+    """Run quick start mode, immediately throwing a question for the user to answer randomly"""
+    # should store a history of correct and incorrect questions into another function
+
+    while True:
+        question = quiz.get_random_question(questions)
+
+        options = [
+            MenuOption(label, action)
+            for label, action in question['choices'].items()
+        ]
+
+        print(f"\n{question['id']} —")
+        print(f"{question['question']}")
+
+        for letter, text in options:
+            print(f"({letter}) — {text}")
+
+        letters = [letter for letter, _ in options]
+        call_controller = return_active_controller()
+        user_input = call_controller(options, question['id'])
+
+        selected_answer = letters[user_input - 1] 
+
+        print(quiz.is_correct(question, selected_answer))
+        print(quiz.get_explanation(question, selected_answer))
+
+        options = [
+            MenuOption("Next question", next_question),
+            MenuOption("Return to terminal menu", None),
+        ]
+
+        print_menu("Main menu", options)
+        print_divider("_")
+        continue_while_loop = prompt_user_input(options)
+        if not continue_while_loop:
+            break
+
+def next_question() -> None:
+    """A placeholder function for the quick_start menu so 'Next question' menu option has a callable"""
 
 def select_a_list() -> None:
     print("Select a list called")
+    # all_lists = quiz.get_all_categories(questions)
+
+    # [lst for lst in all_lists]
+
+    # options = [
+    #     MenuOption("Next question", next_question),
+    #     MenuOption("Return to terminal menu", None),
+    # ]
+
+    # print_menu("Main menu", options)
+    # print_divider("_")
+    # continue_while_loop = prompt_user_input(options)
+    # if not continue_while_loop:
+    #     break
 
 def view_high_scores() -> None:
     print("View high scores called")
 
 def view_questions() -> None:
     print("View questions called")
-
 
 def view_credits() -> None:
     print_credits()
@@ -116,26 +167,30 @@ def print_menu(title: str, options: list[MenuOption]) -> None:
     for number, option in enumerate(options, start=1):
         print(f"[{number}] — {option.label}")
 
-# use_keys_controller: bool = False
-# use_input_controller: bool = True
-
 use_keys_controller: bool = False
 use_input_controller: bool = True
 
+def return_active_controller() -> Controller:
+    if (use_keys_controller is True):
+        return handle_keys_controller
+    elif (use_input_controller is True):
+        return handle_input_controller
+    else:
+        raise NameError("No controller found")
 
-def prompt_user_input(options: list[MenuOption]) -> bool:
+def prompt_user_input(options: list[MenuOption] | None) -> bool:
+    if options is None:
+        return False 
 
     if (use_keys_controller is True):
-        user_input = handle_keys_controller("Use your arrow keys to navigate:", options) # should return a number
-        print(f"You got {user_input}")
+        user_input = handle_keys_controller(options, "Use your arrow keys to navigate:") 
     elif (use_input_controller is True):
         user_input = handle_input_controller(options)
     else:
-        print("No explicit controller detected")
+        raise ValueError("No input controller configured")
 
     try:
-        chosen_menu_option = options[int(user_input) - 1]
-        _, func = chosen_menu_option 
+        chosen_menu_option = options[user_input - 1]
     except NameError:
         print("Item does not exist in memory")
         raise
@@ -145,11 +200,11 @@ def prompt_user_input(options: list[MenuOption]) -> bool:
         print(f"\nInvalid input — you entered {user_input}.\nPlease select an option between (1 - {len(options)})...")
         time.sleep(2.5)
 
-    if func == None:
+    if chosen_menu_option.action is None:
         return False
-    else:
-        chosen_menu_option.action()
-        return True
+
+    chosen_menu_option.action()
+    return True
 
 options = [
     MenuOption("Quick start", quick_start),
@@ -193,7 +248,8 @@ def link(text: str, url: str, end: str = '\n') -> str:
 def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
-def handle_keys_controller(title: str, options: list[MenuOption]) -> None:
+def handle_keys_controller(options: list[MenuOption], title: str = "" ) -> int:
+    """Returns a menu option (int) via key-navigation using readchar and clear_screen"""
     selected = 0
 
     while True:
@@ -212,7 +268,8 @@ def handle_keys_controller(title: str, options: list[MenuOption]) -> None:
         elif pressed in (key.ENTER, key.RIGHT):
             return selected + 1     
 
-def handle_input_controller(options: list[MenuOption]) -> int:
+def handle_input_controller(options: list[MenuOption], title: str = "" ) -> int:
+    """Returns a menu option (int) via typing directly in the terminal"""
     user_input = input(f"\nSelect an option (1 - {len(options)})... ").strip()
     return int(user_input)
 
