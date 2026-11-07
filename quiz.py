@@ -5,6 +5,7 @@ Pure quiz logic: filter questions, check an answer, compute and format a score, 
 #endregion
 
 import random
+from typing import Literal
 
 
 def get_questions(questions: list[dict]) -> list[dict]:
@@ -46,6 +47,10 @@ def filter_questions(questions: list[dict], difficulty: str | None, category: st
     else:
         raise NameError("Somehow Palpatine returned...") # Just a simple check to see if we ever hit this error during execution
 
+def get_all_difficulty_modes(questions: list[dict]) -> list[str]:
+    """Return a list of all difficulty modes within a question set with a set comprehension followed by sorted returning a list"""
+    return sorted({question["difficulty"] for question in questions})
+
 def get_all_categories(questions: list[dict]) -> list[str]:
     """Return a list of all categories within a question set with a set comprehension followed by sorted returning a list"""
     return sorted({question["category"] for question in questions})
@@ -56,6 +61,8 @@ def get_correct_letter(question: dict) -> str:
     for letter, choice in question['choices'].items():
         if choice == answer:
             return letter
+
+    raise ValueError(f"No choice matches the answer: {answer!r}")
 
 def is_correct(question: dict, letter: str) -> bool:
     """Check whether the given letter is the correct answer to a question"""
@@ -90,3 +97,11 @@ def is_high_score(percent: int, high_scores: list[dict]) -> bool:
 
 def add_high_score(high_scores: list[dict], entry: dict) -> None:
     pass
+
+def update_history_record():
+    pass
+
+def add_history_record():
+    pass
+
+# create, read, update, destroy, search, sort
