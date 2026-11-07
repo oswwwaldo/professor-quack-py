@@ -19,13 +19,16 @@ import storage
 
 
 class MenuOption(NamedTuple):
+    """Used to build mennus, pairs a label and an action for returning a function to call"""
     label: str
-    action: Callable[[], None] | None # Callable is the type hint for functions
+    action: Callable[[], object] | None 
+    # Callable is the type hint for functions, we declare an object with a callable function that will return an object (str, None, int etc) or be an empty field
 
-
-Controller = Callable[[list[MenuOption], str], int] # Type-hinting for handle_keys/input_controllers
+Controller = Callable[[list[MenuOption], str], int] 
+# Type-hinting for handle_keys/input_controllers
 
 class Link(NamedTuple):
+    """Used to print clickable links in the terminal, pairs a text and a url"""
     text: str
     url: str
 
@@ -50,81 +53,151 @@ def ask_question() -> dict:
 
     return quiz.get_random_question(questions)
 
+def start() -> None:
+    """Opens a menu with different game modes"""
+    options = [
+        MenuOption("Quick start", quick_start), # easiest way to get started
+        MenuOption("Arcade", arcade), # allows you to pick which questions
+        MenuOption("Death match", death_match), # only one life, this is eligible for high scores
+    ]
+
+    while True:
+        is_running = prompt_user_input(options, "START")
+        if not is_running:
+            break
+
+#region game modes
+#all game modes should store a history of correct and incorrect questions into another function
+#should return a score
 def quick_start() -> None:
     """Run quick start mode, immediately throwing a question for the user to answer randomly"""
-    # should store a history of correct and incorrect questions into another function
 
     while True:
         question = quiz.get_random_question(questions)
 
+        letters = list(question['choices'].keys())
         options = [
-            MenuOption(label, action)
-            for label, action in question['choices'].items()
+            MenuOption(label, None)
+            for label in question['choices'].values()
         ]
 
-        print(f"\n{question['id']} —")
-        print(f"{question['question']}")
-
-        for letter, text in options:
-            print(f"({letter}) — {text}")
-
-        letters = [letter for letter, _ in options]
         call_controller = return_active_controller()
-        user_input = call_controller(options, question['id'])
+        user_input = call_controller(options, f"{question['id']} — {question['question']}")
 
         selected_answer = letters[user_input - 1] 
 
-        print(quiz.is_correct(question, selected_answer))
-        print(quiz.get_explanation(question, selected_answer))
+        # Explore ways to separate the "quiz" and the "reprompt" section, this should be split since this function does too much
+        # It is difficult for me to separate these two at the time of writing this because the while loop structure determines everything pretty much
+        if quiz.is_correct(question, selected_answer):
+            result = "Correct!"
+        else:
+            result = f"Not quite, the correct answer is {quiz.get_correct_letter(question)}"
+        explanation = quiz.get_explanation(question, selected_answer)
 
         options = [
             MenuOption("Next question", next_question),
             MenuOption("Return to terminal menu", None),
         ]
 
-        print_menu("Main menu", options)
-        print_divider("_")
-        continue_while_loop = prompt_user_input(options)
+        continue_while_loop = prompt_user_input(options, f"{result}\n{explanation}")
         if not continue_while_loop:
             break
+
+def arcade() -> None:
+    """Allows the user to select which questions they'd like to go"""
+    while True:
+
+        # TODO: Make it possible for a user to not have to choose a category or difficulty in the first place
+        # TODO: Arcade should be infinite questions until the user stops, quick start should be a limited run of questions
+        # TODO: Create a filter question
+
+        chosen_category = prompt_a_category()
+        chosen_difficulty = prompt_a_difficulty()
+        available_questions = quiz.filter_questions(questions, chosen_difficulty, chosen_category)
+
+        # If there aren't any questions that match...
+        if len(available_questions) < 1:
+            pass
+
+        print(available_questions)
+
+        # letters = list(question['choices'].keys())
+        # options = [
+        #     MenuOption(label, None)
+        #     for label in question['choices'].values()
+        # ]
+
+        # call_controller = return_active_controller()
+        # user_input = call_controller(options, f"{question['id']} — {question['question']}")
+
+        # selected_answer = letters[user_input - 1] 
+
+        # if quiz.is_correct(question, selected_answer):
+        #     result = "Correct!"
+        # else:
+        #     result = f"Not quite, the correct answer is {quiz.get_correct_letter(question)}"
+        # explanation = quiz.get_explanation(question, selected_answer)
+
+        # options = [
+        #     MenuOption("Next question", next_question),
+        #     MenuOption("Return to terminal menu", None),
+        # ]
+
+        # continue_while_loop = prompt_user_input(options, f"{result}\n{explanation}")
+        # if not continue_while_loop:
+        #     break
+
+def death_match() -> None:
+    """One life, timed—this is eligible for high scores"""
+
+
+#endregion
+
 
 def next_question() -> None:
     """A placeholder function for the quick_start menu so 'Next question' menu option has a callable"""
 
-def select_a_list() -> None:
-    print("Select a list called")
-    # all_lists = quiz.get_all_categories(questions)
+def prompt_a_category() -> str:
+    all_categories = quiz.get_all_categories(questions)
 
-    # [lst for lst in all_lists]
+    options = [
+        MenuOption(label, None)
+        for label in all_categories
+    ]
 
-    # options = [
-    #     MenuOption("Next question", next_question),
-    #     MenuOption("Return to terminal menu", None),
-    # ]
+    call_controller = return_active_controller()
+    user_input = call_controller(options, "Select a category of questions to practice on")
+    selected_category = options[user_input - 1]
+    print(f"You selected: {selected_category.label}")
 
-    # print_menu("Main menu", options)
-    # print_divider("_")
-    # continue_while_loop = prompt_user_input(options)
-    # if not continue_while_loop:
-    #     break
+    return selected_category.label
+
+def prompt_a_difficulty() -> str:
+    all_difficulty_modes = quiz.get_all_difficulty_modes(questions)
+
+    options = [
+        MenuOption(label, None)
+        for label in all_difficulty_modes
+    ]
+
+    call_controller = return_active_controller()
+    user_input = call_controller(options, "Select your difficulty to practice on")
+    selected_difficulty_mode = options[user_input - 1]
+    print(f"You selected: {selected_difficulty_mode.label}")
+
+    return selected_difficulty_mode.label
 
 def view_high_scores() -> None:
     print("View high scores called")
 
-def view_questions() -> None:
+def view_all_questions() -> None:
     print("View questions called")
+
+def view_settings() -> None:
+    pass
 
 def view_credits() -> None:
     print_credits()
-
-def run_quiz() -> None:
-    print("Running quiz...\n\n\n")
-    user_input = input("\nSelect an option (1-4)...").strip()
-
-    if user_input == "done":
-        print("\n\n\n.")
-    else:
-        print("Did not work.")
 
 def print_question_ids(questions: list[dict]) -> None:
     """Print a list of question ids"""
@@ -166,39 +239,25 @@ def print_menu(title: str, options: list[MenuOption]) -> None:
     print(f'\n{title}:')
     for number, option in enumerate(options, start=1):
         print(f"[{number}] — {option.label}")
+    print_divider("_")
 
 use_keys_controller: bool = False
 use_input_controller: bool = True
 
-def return_active_controller() -> Controller:
+def return_active_controller() -> Callable:
+    """Returns the function handling the controller that is in use"""
     if (use_keys_controller is True):
         return handle_keys_controller
     elif (use_input_controller is True):
         return handle_input_controller
     else:
-        raise NameError("No controller found")
+        raise NameError("No controller found in use")
 
-def prompt_user_input(options: list[MenuOption] | None) -> bool:
-    if options is None:
-        return False 
-
-    if (use_keys_controller is True):
-        user_input = handle_keys_controller(options, "Use your arrow keys to navigate:") 
-    elif (use_input_controller is True):
-        user_input = handle_input_controller(options)
-    else:
-        raise ValueError("No input controller configured")
-
-    try:
-        chosen_menu_option = options[user_input - 1]
-    except NameError:
-        print("Item does not exist in memory")
-        raise
-    except ValueError:
-        print("Invalid input — Cannot typecast into int()")
-    except IndexError:
-        print(f"\nInvalid input — you entered {user_input}.\nPlease select an option between (1 - {len(options)})...")
-        time.sleep(2.5)
+def prompt_user_input(options: list[MenuOption], title: str = "") -> bool:
+    """Let the user pick an option with the active controller and run it. Returns False when the option means 'leave'"""
+    call_controller = return_active_controller()
+    user_input = call_controller(options, title)
+    chosen_menu_option = options[user_input - 1]
 
     if chosen_menu_option.action is None:
         return False
@@ -206,31 +265,7 @@ def prompt_user_input(options: list[MenuOption] | None) -> bool:
     chosen_menu_option.action()
     return True
 
-options = [
-    MenuOption("Quick start", quick_start),
-    MenuOption("Select a list", select_a_list),
-    MenuOption("View high scores", view_high_scores),
-    MenuOption("View all questions", view_questions),
-    MenuOption("Credits", view_credits),
-    MenuOption("Return to main menu", None),
-]
-
-def main_menu() -> None:
-    """A while loop with user input and menu options"""
-    is_running: bool = True
-    while True:
-        print_menu("CLI Terminal", options)
-        is_running = prompt_user_input(options)
-        if not is_running:
-            break
-
-
-# size = shutil.get_terminal_size()
-# print("The whole object:", size)
-# size.columns = horizontal, size.lines = vertical
-
-# columns, lines = size
-
+#region print functions
 def print_divider(char: str = "=") -> None:
     """Print a line of `char` that spans the terminal's current width via shutil"""
     width = shutil.get_terminal_size().columns
@@ -244,6 +279,7 @@ def centered(text: str, fill: str = " ") -> str:
 def link(text: str, url: str, end: str = '\n') -> str:
     """Print a clickable URL to the terminal, supported by modern terminals — using the OSC 8 ANSI escape sequence"""
     return (f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\")
+#endregion
 
 def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
@@ -268,10 +304,23 @@ def handle_keys_controller(options: list[MenuOption], title: str = "" ) -> int:
         elif pressed in (key.ENTER, key.RIGHT):
             return selected + 1     
 
-def handle_input_controller(options: list[MenuOption], title: str = "" ) -> int:
-    """Returns a menu option (int) via typing directly in the terminal"""
-    user_input = input(f"\nSelect an option (1 - {len(options)})... ").strip()
-    return int(user_input)
+def handle_input_controller(options: list[MenuOption], title: str = "") -> int:
+    """Returns a menu option (int) via typed input in the terminal"""
+    print_menu(title, options)
+
+    while True:
+        user_input = input(f"\nSelect an option (1 - {len(options)})... ").strip()
+
+        if not user_input.isdigit():
+            print(f"Please enter a number from 1 to {len(options)}.")
+            continue
+
+        choice = int(user_input)
+        if not 1 <= choice <= len(options):
+            print(f"Please enter a number from 1 to {len(options)}.")
+            continue
+
+        return choice
 
 def activate_keys_controller() -> None:
     """Switch to keys controller, disabling input controller"""
@@ -294,3 +343,19 @@ def activate_input_controller() -> None:
     print(f"The input controller is now {use_keys_controller}")
     print(f"The keys controller is now {use_input_controller}")
     print(activate_input_controller)
+
+options = [
+    MenuOption("Start", start),
+    MenuOption("View high scores", view_high_scores),
+    MenuOption("View all questions", view_all_questions),
+    MenuOption("Settings", view_settings),
+    MenuOption("Credits", view_credits),
+    MenuOption("Return to main menu", None),
+]
+
+def main_menu() -> None:
+    """A while loop with user input and menu options"""
+    while True:
+        is_running = prompt_user_input(options, "CLI Terminal")
+        if not is_running:
+            break

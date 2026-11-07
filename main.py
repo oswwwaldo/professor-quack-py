@@ -12,18 +12,15 @@ def view_settings() -> None:
     ]
 
     while True:
-        print('\n\n')
         if terminal.use_keys_controller is True:
-            print("You are currently accessing the terminal via the arrow-keys interface")
+            current_mode = "arrow keys"
         elif terminal.use_input_controller is True: 
-            print("You are currently accessing the terminal via the typed input interface")
+            current_mode = "typed input"
         else:
             print('Exception: else statement reached')
             print(f"use_keys: {terminal.use_keys_controller} && use_input: {terminal.use_input_controller}")
 
-        terminal.print_menu("Welcome", options)
-        terminal.print_divider("_")
-        is_running = terminal.prompt_user_input(options)
+        is_running = terminal.prompt_user_input(options, f"Settings (currently using {current_mode})")
         if not is_running:
             break
 
@@ -38,9 +35,7 @@ def prompt_view() -> None:
     ]
 
     while True:
-        terminal.print_menu("Main menu", options)
-        terminal.print_divider("_")
-        is_running = terminal.prompt_user_input(options)
+        is_running = terminal.prompt_user_input(options, "Main menu")
         if not is_running:
             break
 
