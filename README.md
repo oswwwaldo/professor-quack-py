@@ -1,6 +1,12 @@
 # Professor Quack.py
 
-A discord bot with quiz, pull request matchmaking, code challenging and LLM functionality. It's a bot with a personality—he's also a duck.
+A quiz app for Marcy Lab School SWE students based on the 2026 Gitbook, available in three branches—as a CLI application, as a Discord bot or as an API.
+
+Eventually this quiz app will expand to new technologies, languages and tooling.
+
+## Why is this repository called Professor Quack.py?
+
+Because.
 
 ## Design principles
 
@@ -23,11 +29,11 @@ to the player state, but that is beyond the MVP so maybe for the future...
 
 ## Overview
 
-![Architecture](Untitled-2026-10-26-1632.png)
+![Architecture](Untitled-2026-11-7-1632.png)
 
-The app communicates either as a CLI terminal application or as a discord bot (with added functionality)
+The app communicates either as a CLI terminal application, discord bot or as an API. All three views have slightly different functionality.
 
-To start the API view, please run `uvicorn api:app --reload`
+To start the API view specifically, please run `uvicorn api:app --reload`
 
 ## Core
 
@@ -78,15 +84,15 @@ To start the API view, please run `uvicorn api:app --reload`
 * GitHub Actions
 * Google AI Studio
 * Cloudflare Workers
-* Anki
+* Anki (FSRS)
 * QuizAPI.io
 * FastAPI
 
 ## Answer Matching
 
-* Use the Levenshtein algorithm to handle possible answer mismatches, such as extra whitespace in a question or answer.
+* Use the Levenshtein algorithm to handle possible search queries
 
-## Slash Commands
+## Planned Slash Commands
 
 * `/help`
 * `/quiz`
@@ -96,6 +102,6 @@ To start the API view, please run `uvicorn api:app --reload`
 * `/explain`
 * `/quack`
 
-## Source
+## Source TO Pull From
 
 [Google Doc](https://docs.google.com/document/d/1HDtu0-PQcvYO4X-RIxT8mjOcsxf3cgXGdFPtXZN7QDM)
