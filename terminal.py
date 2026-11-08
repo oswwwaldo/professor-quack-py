@@ -15,11 +15,12 @@ import readchar
 from readchar import key
 
 import quiz
+import sound
 import storage
 
 
 class MenuOption(NamedTuple):
-    """Used to build mennus, pairs a label and an action for returning a function to call"""
+    """Used to build menus, pairs a label and an action for returning a function to call"""
     label: str
     action: Callable[[], object] | None = None
     # Callable is the type hint for functions, we declare an object with a callable function that will return an object (str, None, int etc) or be an empty field
@@ -44,9 +45,6 @@ def say_hi():
 # print(quiz.get_random_question(questions))
 
 # storage.read_file('questions.json')
-
-def prompt_choice(prompt, options) -> None:
-    pass
 
 def ask_question(question: dict) -> str:
     """Prompts the user with a question, prints the menu and returns the user's returned letter choice"""
@@ -77,6 +75,7 @@ def start() -> None:
         MenuOption("Quick start", quick_start), # easiest way to get started
         MenuOption("Arcade", arcade), # allows you to pick which questions
         MenuOption("Death match", death_match), # only one life, this is eligible for high scores
+        MenuOption("Return to terminal menu", None)
     ]
 
     while True:
@@ -106,13 +105,14 @@ def quick_start() -> None:
 
             if quiz.is_correct(question, selected_answer):
                 correct += 1
+                sound.play_correct()
+            else:
+                sound.play_wrong()
         
         score = quiz.format_score(correct, total_answered)
         print(f"You've scored: {score}")
         time.sleep(1.5)
         break
-
-# TODO: Arcade should be infinite questions until the user stops, quick start should be a limited run of questions
 
 # TODO: Make it possible for a user to not have to choose a category or difficulty in the first place
 def arcade() -> None:
@@ -142,6 +142,10 @@ def arcade() -> None:
 
             if quiz.is_correct(question, selected_answer):
                 correct += 1
+                sound.play_correct()
+            else: 
+                sound.play_wrong()
+
             if not ask_to_continue("Ready for another one?"):
                 break
         
@@ -150,8 +154,151 @@ def arcade() -> None:
         time.sleep(1.5)
         break
 
+def get_ascii_art(selection: int) -> str:
+    """Returns one str from a collection of ASCII strings for dramatic effect"""
+    ascii_art: list[str] = [
+        """        
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⡟⠛⠛⠋⠉⠉⠉⠉⠛⠛⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠋⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠍⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠙⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠫⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠄⠈⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠥⡍⡴⡃⠄⠒⠀⠀⠀⠀⠀⠀⠀⠀⠄⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⢀⠀⡀⡐⠼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠁⠞⢼⢁⢇⠀⣄⠀⠀⠀⠀⠀⠀⠀⢠⠈⠀⠐⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⢈⠔⠨⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢏⠈⠐⠁⠅⢱⠊⡈⢩⡡⠀⠆⠁⠀⠀⠠⠐⠁⠀⢀⠀⠓⠀⠀⠀⢠⡀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠈⠑⠺⠛⢽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠐⠀⠀⠀⠀⠂⣯⡋⠁⠁⠀⠁⠀⠀⢄⠀⠈⢧⠄⠀⠀⠀⢀⠐⣀⠠⠔⢊⡔⡀⣄⡀⠀⠈⢶⠆⣠⡀⢸⡔⠣⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⢀⠀⠈⠐⠄⢢⣴⣿⣦⣚⣂⡐⠌⢕⠀⡹⡀⡠⡀⠢⠔⠀⠐⠄⢘⣀⣩⣵⠒⡐⡟⠡⠀⡀⠠⢒⡈⢺⢝⣟⡐⡙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⡟⠀⢀⠝⠀⠁⡈⣐⣽⣿⣿⣿⣟⣠⠰⣅⣢⣞⣡⣱⡮⠉⡠⢠⣀⣵⣾⣿⣿⣿⣿⣔⣶⡌⢲⣳⣬⠥⣎⣃⢋⢋⣿⣶⡨⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⡇⠁⠀⢀⡢⠈⠉⠉⠉⠃⢛⢑⠛⠃⡦⡰⣋⣼⣌⣹⣁⣪⣾⣶⣿⣿⣿⣿⣿⣿⣿⣿⡟⡁⢘⣺⣗⡌⣼⡛⢾⣿⣿⣿⣿⣧⣥⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⡇⠀⣠⣔⠕⠀⢀⠂⠀⡀⠀⠙⠤⠴⡒⠛⣿⣿⠟⠁⠙⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣽⣽⠄⢁⣅⡌⠁⣨⣝⡹⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⡇⠀⣶⢍⠄⠠⠀⠖⠀⠀⡀⠀⠀⡀⠉⢄⣟⡇⠁⠀⠀⠪⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣿⡿⣡⡜⡜⡇⣾⣿⣿⣿⢹⣿⣿⣿⡟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⡇⣹⢿⡝⡆⡔⢁⠀⡆⠙⠡⠄⠀⠈⠀⠁⠘⣿⠀⠀⠀⠈⡙⠻⣿⣿⣿⣿⣿⣿⣿⣿⠟⣃⡬⣾⠐⠁⣴⣿⣿⣿⣇⣆⣿⣿⣾⢏⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣧⡘⠚⠁⡘⠀⢐⡖⢁⡖⠻⠠⣦⡁⠒⢨⣤⣿⠆⡀⡔⢀⠃⠀⡀⢁⢉⠌⠉⠀⠰⠐⣶⠻⢡⡟⠉⣰⣿⣿⣿⣿⣿⣧⣏⠛⠙⠿⠽⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣯⠗⠌⠰⠀⢲⠃⠹⡝⠁⣃⣴⣿⠎⠜⠉⠐⠀⠀⠀⠀⠈⠠⠀⡱⣶⣮⣐⢈⡭⠆⣍⠶⠌⢧⠘⣾⣿⣿⣿⣿⣿⡏⡿⣘⢱⠭⠄⢿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣟⡌⠰⠑⠀⠀⠆⡐⡠⣚⣾⠟⠀⠀⠑⠀⠀⠀⠀⠀⠩⢄⢀⠨⢶⠽⢨⣅⠛⢓⣥⡒⣨⠂⠀⡘⣿⣷⣿⣿⣿⣿⡗⡟⢻⢨⡣⣿⡌⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⡸⣌⢭⣦⣱⣦⢰⣦⣌⢁⢲⡴⣀⣐⣀⡀⠀⠀⠀⠀⠏⠘⣶⣤⡀⠚⡯⠻⣏⢫⡟⢿⢀⢢⠱⠈⢛⡻⢿⡟⠿⡥⣃⡭⠤⢺⢽⢑⢽⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠻⣬⢋⠻⣿⣾⣿⣿⣾⣮⣧⣿⣿⣿⣷⣆⣤⡴⣦⣄⣐⣉⣙⠑⢄⢱⡂⢛⢜⡃⠈⠈⠘⡦⣒⠜⠗⢘⠧⢴⠷⢯⣃⣠⣾⣾⣮⣾⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣈⣋⢆⠒⠾⣿⣿⣿⣻⣿⣿⣿⣿⣿⢛⣛⣿⣿⣿⣧⣿⣿⡟⢮⠡⠈⢆⢈⢠⠋⡙⡇⢄⣉⠃⣧⡄⢳⡸⢌⢫⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣌⠣⢡⠴⠹⢟⣶⣿⣽⣿⣿⣯⣽⣿⣿⡟⣻⣿⣿⣿⣿⡆⡼⢡⢣⣂⡇⠾⠇⠙⠃⡸⡌⢅⡑⠃⣀⠳⠡⠘⠶⠉⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⢚⢄⠋⣹⣿⡇⣹⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣜⣼⡋⣄⣤⣶⣬⢷⣶⠇⢿⡟⠳⣾⢫⠻⡾⠛⣶⠳⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣎⡲⣠⡑⢻⣆⣟⠿⢻⣿⡏⠘⣿⣿⣿⣿⣿⣿⣻⠛⡻⢿⠋⢿⠙⡯⠠⣿⠈⠸⡇⡁⣫⢹⠀⡿⠃⢸⢩⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣧⡘⢧⡛⢛⣭⢪⢾⣿⣿⣯⣿⣿⣿⣷⣾⣿⣶⣾⣶⣿⣶⣿⣷⣿⣷⣾⣿⣶⣾⣿⣾⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡧⢀⠠⢿⡇⠉⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢸⠐⢠⡆⡈⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⢐⡌⠑⡃⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣿⣿⡏⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡽⢈⠠⠐⣆⠘⣻⣿⢋⣫⠽⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⢂⠁⠄⠺⡄⠓⣹⣷⣇⢀⡞⡹⠿⢿⢿⣿⣿⣿⣿⡯⣽⣿⣿⣿⣟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡗⡂⠐⢀⠀⠁⣄⠐⠌⢍⠙⠳⡦⣿⡄⡟⢉⡏⠛⣹⢛⣿⠟⡟⢿⣩⡇⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣐⣐⠀⠀⠀⠈⢧⠜⠚⠕⠚⡄⢭⢙⠳⠿⣧⣶⠿⠦⡿⠾⠯⡿⠼⠷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠟⠂⠈⣯⢰⡅⡄⠏⠹⢁⠁⠂⠤⡄⡶⢰⡂⢯⠻⣟⢙⣋⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣢⠄⡺⢧⡸⠘⣤⢠⠆⠈⠀⣁⡳⢦⡜⡃⢉⠻⣎⠄⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣴⡀⠈⢃⠙⢤⠑⡆⡀⢇⢹⣏⢻⠃⠺⣇⡸⣘⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣄⡀⠀⠨⠃⠙⡼⠵⠺⠃⠀⠐⠈⠉⠃⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣶⣤⣄⣀⣀⣀⣠⣴⣦⣬⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀""",
+        """
+        ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣶⣶⣶⣶⣶⣶⣦⣄⡀⠀⠀⠀⠀
+        ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀⠀⠀
+        ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⡀⠀⠀⠀⠀⠀⢀⣈⣿⣶⣿⣿⣿⡿⢿⣿⡿⠛⠙⠻⣿⣿⡇⠀⠀
+        ⠀⠀⠀⠀⠀⣀⣤⣤⣶⣶⣆⣀⣤⣄⡀⠀⠀⠀⢀⣤⣶⣿⣿⣿⣿⣿⣿⣿⣦⣄⠀⢀⣿⣿⣿⣿⡿⠿⠚⠀⢀⣾⣧⡀⠀⠀⠀⠀⠑⠄⠀
+        ⠀⠀⠀⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣤⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣜⠇⣇⠹⠋⠀⠀⠀⠀⢨⣿⠿⢦⡀⠀⠀⠀⠀⡀⠀
+        ⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⣿⣏⠀⠀⠀⠀⣀⣿⠇⠀⠀⢷⣆⣸⣀⣰⣿⣇
+        ⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣸⣿⣿⣷⣶⡾⢟⠁⠀⠀⢀⠀⣹⣟⡉⠀⠈⠻
+        ⢀⣿⡏⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠉⠉⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣾⣤⣤⣴⣾⣿⣿⣾⡆⠀⠀⠀
+        ⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⠿⣿⣿⠁⠀⠀⠀⠀⢸⣿⣿⣿⠇⠀⠀⠙⣿⠛⢙⣛⠿⢿⣿⣿⣿⡯⠿⠿⠏⠏⢃⠀⠀⠀
+        ⠀⢠⡏⠁⠀⠀⠀⠙⣻⣿⣿⣿⡿⠿⠻⠿⡛⡀⣾⣿⣦⣤⡄⣀⣀⣰⣿⠟⣿⣂⠀⠀⠀⣷⠀⣺⣿⣧⢈⣥⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        ⢀⡆⢄⡄⠀⢀⣠⣴⣿⣿⣿⠿⠀⠀⠀⠀⠈⢣⣿⣿⣿⣿⣷⣿⣿⣿⣿⠀⢘⣿⣷⣶⣾⣿⡆⠸⠿⢿⣿⠟⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        ⢿⢿⣿⣷⣴⣿⣿⣿⠟⠁⢸⣧⡄⠀⠀⣀⣴⡷⠻⢿⣿⣿⣿⣿⣿⣿⣧⣠⣤⣿⣿⣿⣿⣿⣿⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        ⢨⢻⣿⣿⣿⣿⣿⡃⢀⣀⢀⣯⣿⣿⣶⣿⣿⡇⠀⠀⠉⠉⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠻⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        ⠀⠀⢸⣿⣿⣿⣿⣿⣾⣯⣴⣿⣿⢿⣿⣿⡿⠃⠀⠀⠀⠘⢾⣿⡟⡿⠛⠛⠛⢿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        ⠀⠐⠿⠿⣿⢿⡿⢿⣿⣿⣿⣿⣽⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"""
+    ]
+    return ascii_art[selection]
+
 def death_match() -> None:
     """One life, timed intensive mode—this is eligible for writing to high scores"""
+    while True:
+
+        clear_screen()
+        print(get_ascii_art(0))
+        time.sleep(1)
+
+        print("This mode demands your absolute best, get as many questions right and be inducted into the hall of fame. Failure is not an option.")
+        print("Answer as many as you can in ten seconds, you get 0.5s added on for every correct answer.")
+        print("Chose incorrectly? You lose. Ran out of time? You lose.")
+        time.sleep(1.5)
+    
+        options: list[MenuOption] = [
+            MenuOption("I'm ready", next_question),
+            MenuOption("I'm too chicken :C", None)
+        ]
+    
+        call_controller: Callable = return_active_controller()
+        user_input: int = call_controller(options, "This is a timed death match — are you ready?")
+
+
+        if (user_input == 1):
+            pass
+        elif (user_input == 2):
+            break
+        else:
+            continue
+
+        total_answered: int = 0
+        correct: int = 0
+
+        clear_screen()
+        print("The countdown starts now...")
+        print("3")
+        time.sleep(1)
+        print("2")
+        time.sleep(1)
+        print("1")
+        time.sleep(1)
+        print("0")
+        time.sleep(0.5)
+
+        available_questions: list[dict] = quiz.get_random_questions(questions, 50)
+
+        for question in available_questions:
+            
+            total_answered += 1
+            selected_answer = ask_question(question)
+            # for seconds in [3, 2, 1]:
+            #     print(f"\rTime left: {seconds}s ", end="", flush=True)
+            #     time.sleep(1)
+            #     print("\rTime's up!")
+            
+            result = quiz.format_result(question, selected_answer)
+            print(result)
+
+            if quiz.is_correct(question, selected_answer):
+                correct += 1
+                sound.play_correct()
+            else:
+                print(get_ascii_art(1))
+                print("You died. You choose poorly.")
+                sound.play_death()
+                time.sleep(2)
+                score = quiz.format_score(correct, total_answered)
+                print(f"You've scored: {score}")
+                time.sleep(1.5)
+                if not ask_to_continue("Ready for another one?"):
+                    break
+        
+        time.sleep(2)
+        break
+
+
 #endregion
 
 
@@ -182,7 +329,7 @@ def add_easter_egg_menu_option(options: list[MenuOption]) -> tuple[list[MenuOpti
         "Release the quacken.",
     ]
 
-    random_number: int = quiz.get_random_number(0, len(funny_phrases))
+    random_number: int = quiz.get_random_number(0, len(funny_phrases) - 1)
     message: str = funny_phrases[random_number]
 
     updated_options: list[MenuOption] = options.copy()
@@ -218,32 +365,34 @@ def prompt_a_length(questions: list[dict]) -> int:
         return int(user_choice.label)
 
 def prompt_a_category() -> str:
-    all_categories = quiz.get_all_categories(questions)
+    """Prompt the user for what category they'd like their questions in, prints a menu and returns an str"""
+    all_categories: list[str] = quiz.get_all_categories(questions)
 
-    options = [
+    options: list[MenuOption] = [
         MenuOption(label, None)
         for label in all_categories
     ]
 
-    call_controller = return_active_controller()
-    user_input = call_controller(options, "Select a category of questions to practice on")
-    selected_category = options[user_input - 1]
+    call_controller: Callable = return_active_controller()
+    user_input: int = call_controller(options, "Select a category of questions to practice on")
+    selected_category: MenuOption = options[user_input - 1]
     print(f"You selected: {selected_category.label}")
 
     return selected_category.label
 
 # TODO: Note that prompt_a_difficulty may not return options sorted in this manner (easy -> med -> hard) but could be (easy -> hard -> med)
 def prompt_a_difficulty() -> str:
-    all_difficulty_modes = quiz.get_all_difficulty_modes(questions)
+    """Prompt the user for what difficulty they'd like to practice on, prints a menu and returns an str"""
+    all_difficulty_modes: list[str] = quiz.get_all_difficulty_modes(questions)
 
-    options = [
+    options: list[MenuOption] = [
         MenuOption(label, None)
         for label in all_difficulty_modes
     ]
 
-    call_controller = return_active_controller()
-    user_input = call_controller(options, "Select your difficulty to practice on")
-    selected_difficulty_mode = options[user_input - 1]
+    call_controller: Callable = return_active_controller()
+    user_input: int = call_controller(options, "Select your difficulty to practice on")
+    selected_difficulty_mode: MenuOption = options[user_input - 1]
     print(f"You selected: {selected_difficulty_mode.label}")
 
     return selected_difficulty_mode.label
@@ -255,10 +404,42 @@ def view_all_questions() -> None:
     print("View questions called")
 
 def view_settings() -> None:
-    pass
+    options = [
+        MenuOption("Modify profile settings", view_profile),
+        MenuOption("Toggle sound effects", sound.toggle_sfx),
+        MenuOption("Toggle background music", sound.toggle_music),
+        MenuOption("Return to main menu", None),
+    ]
+    while True:
+        is_running = prompt_user_input(options, "CLI Terminal Settings")
+        if not is_running:
+            break
+
+def view_profile() -> None:
+    options = [
+        MenuOption("Name:", change_name),
+        MenuOption("Username:", change_username),
+        MenuOption("Country:", change_country),
+        MenuOption("Return to main menu", None),
+    ]
+    while True:
+        is_running = prompt_user_input(options, "CLI Terminal Settings")
+        if not is_running:
+            break
+
+def change_name() -> None:
+    """Modifies the existing player object and changes their name"""
+
+def change_username() -> None:
+    """Modifies the existing player object and changes their username, must be four letters in total for leaderboards"""
+
+def change_country() -> None:
+    """Modifies the existing player object and changes their country"""
 
 def view_credits() -> None:
+    """View credits menu with three second delay"""
     print_credits()
+    time.sleep(3)
 
 def print_question_ids(questions: list[dict]) -> None:
     """Print a list of question ids"""
