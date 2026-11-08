@@ -4,9 +4,6 @@ import os
 
 if os.name == "nt":
     import winsound
-else:
-    winsound = None
-
 
 def play_correct() -> None:
     """A short ding for a correct answer"""
@@ -14,7 +11,6 @@ def play_correct() -> None:
         winsound.Beep(880, 100)
     else:
         print("\a", end="", flush=True)
-
 
 def play_wrong() -> None:
     """A low buzz for a wrong answer"""
