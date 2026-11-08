@@ -112,26 +112,22 @@ def quick_start() -> None:
         time.sleep(1.5)
         break
 
-# TODO: Make it possible for a user to not have to choose a category or difficulty in the first place
 # TODO: Arcade should be infinite questions until the user stops, quick start should be a limited run of questions
-# TODO: Create a filter question
-# TODO: Note that prompt_a_difficulty may not return options sorted in this manner (easy -> med -> hard) but could be (easy -> hard -> med)
 
+# TODO: Make it possible for a user to not have to choose a category or difficulty in the first place
 def arcade() -> None:
-    """Allows the user to select which questions they'd like to go"""
+    """Prompts the user for a category, difficulty and a length before returning a list of questions to answer"""
     while True:
         chosen_category: str = prompt_a_category()
         chosen_difficulty: str = prompt_a_difficulty()
         filtered_questions: list[dict] = quiz.filter_questions(questions, chosen_difficulty, chosen_category)
-        chosen_length: int = prompt_a_length(filtered_questions)
 
-        available_questions: list[dict] = quiz.get_random_questions(filtered_questions, chosen_length)
-
-        if len(available_questions) < 1:
+        if len(filtered_questions) < 1:
             print("That is so specific! No questions could be found under those qualifiers, please try again.")
-            continue
+            continue # restart the the while loop early
 
-        question: dict = quiz.get_random_question(available_questions)
+        chosen_length: int = prompt_a_length(filtered_questions)
+        available_questions: list[dict] = quiz.get_random_questions(filtered_questions, chosen_length)
 
         total_answered: int = 0
         correct: int = 0
@@ -162,13 +158,11 @@ def death_match() -> None:
 def next_question() -> None:
     """A placeholder function for the quick_start menu so 'Next question' menu option has a callable"""
 
-def prompt_a_length(questions: list[dict]) -> int:
-    """Prompt the user for how many questions they'd like to answer, prints a menu and returns an int"""
-
+def add_easter_egg_menu_option(options: list[MenuOption]) -> tuple[list[MenuOption], str]:
     funny_phrases = [
         "Literally give me everything, I'm an absolute unit",
         "I'll take them all",
-        "You want me to give you a number? Are you kidding?",
+        "You want me to give you a range? Are you kidding?",
         "Imma yolo it",
         "Imma solo it",
         "LETSGOOOOOOOO",
@@ -188,6 +182,18 @@ def prompt_a_length(questions: list[dict]) -> int:
         "Release the quacken.",
     ]
 
+    random_number: int = quiz.get_random_number(0, len(funny_phrases))
+    message: str = funny_phrases[random_number]
+
+    updated_options: list[MenuOption] = options.copy()
+    updated_options.append(MenuOption(message))
+
+    return updated_options, message
+
+
+def prompt_a_length(questions: list[dict]) -> int:
+    """Prompt the user for how many questions they'd like to answer, prints a menu and returns an int"""
+
     count: int = len(questions)
     counts: list[int] = [5, 10, 15]
     counts += list(range(25, count + 1, 10))
@@ -198,17 +204,16 @@ def prompt_a_length(questions: list[dict]) -> int:
           if n <= count
     ]
 
-    random_number: int = quiz.get_random_number(0, len(funny_phrases))
-    easter_egg_label: str = funny_phrases[random_number]
-    options.append(MenuOption(easter_egg_label))
+    updated_options, easter_egg_label = add_easter_egg_menu_option(options)
 
     call_controller: Controller = return_active_controller()
-    user_input: int = call_controller(options, "Select the number of questions you'd like to practice for")
-    user_choice: MenuOption = options[user_input - 1]
+    user_input: int = call_controller(updated_options, "Select the number of questions you'd like to practice for")
+    user_choice: MenuOption = updated_options[user_input - 1]
     print(f"You selected: {user_choice.label}")
 
+    # Assume easter egg label will prompt user to select all questions
     if user_choice.label == easter_egg_label:
-        return count
+        return len(questions)
     else:
         return int(user_choice.label)
 
@@ -227,6 +232,7 @@ def prompt_a_category() -> str:
 
     return selected_category.label
 
+# TODO: Note that prompt_a_difficulty may not return options sorted in this manner (easy -> med -> hard) but could be (easy -> hard -> med)
 def prompt_a_difficulty() -> str:
     all_difficulty_modes = quiz.get_all_difficulty_modes(questions)
 
