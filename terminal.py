@@ -45,6 +45,11 @@ class Link(NamedTuple):
     text: str
     url: str
 
+MIN_NAME_LENGTH = 2
+MAX_NAME_LENGTH = 30
+
+REQUIRED_USERNAME_LENGTH = 4
+
 use_keys_controller: bool = False
 use_input_controller: bool = True
 
@@ -160,6 +165,7 @@ def arcade() -> None:
         time.sleep(1.5)
         break
 
+# TODO: Add more ascii examples, and a frozen set of acceptable strings to determine what 'mood' we want (i.e death, victory, wait etc)
 def get_ascii_art(selection: int) -> str:
     """Returns one str from a collection of ASCII strings for dramatic effect"""
     ascii_art: list[str] = [
@@ -303,8 +309,6 @@ def death_match() -> None:
         
         time.sleep(2)
         break
-
-
 #endregion
 
 
@@ -454,13 +458,13 @@ def view_settings() -> None:
             break
 
 def view_profile() -> None:
+    while True:
     options = [
-        MenuOption("Name:", change_name),
-        MenuOption("Username:", change_username),
-        MenuOption("Country:", change_country),
+            MenuOption(f"Name: {player.name}", change_name),
+            MenuOption(f"Username: {player.username}", change_username),
+            MenuOption(f"Country: {player.country.name}", change_country),
         MenuOption("Return to main menu", None),
     ]
-    while True:
 
         menu_title = "CLI: Profile Settings" # default title
 
@@ -469,11 +473,44 @@ def view_profile() -> None:
             break
 
 def change_name() -> None:
-    """Modifies the existing player object and changes their name"""
+    """Ask for a new player name and save it. Enter on an empty line keeps the current name"""
+    while True:
+        user_input = input(f"What would you like to be called? (currently {player.name}, Enter to cancel) ").strip()
+
+        if user_input == "":
+            print(f"No changes made. You're still {player.name}.")
+            return
+
+        if len(user_input) < MIN_NAME_LENGTH:
+            print(f"Come on buddy, give us your REAL name (at least {MIN_NAME_LENGTH} characters).")
+            continue
+
+        if len(user_input) > MAX_NAME_LENGTH:
+            print(f"Son... I ain't putting allat in ToT (keep it to {MAX_NAME_LENGTH} characters).")
+            continue
+
+        player.name = user_input
+        print(f"Your name is now {player.name}.")
+        return
 
 def change_username() -> None:
     """Modifies the existing player object and changes their username, must be four letters in total for leaderboards"""
+    while True:
+        user_input = input(f"What would you like your user to be? Only {REQUIRED_USERNAME_LENGTH} characters please! (currently {player.name}, Enter to cancel) ").strip()
 
+        if user_input == "":
+            print(f"No changes made. You're still {player.username}.")
+            return
+
+        if len(user_input) is not REQUIRED_USERNAME_LENGTH:
+            print(f"Sorry, try again! — at least {REQUIRED_USERNAME_LENGTH} characters).")
+            continue
+
+        player.username = user_input
+        print(f"Your name is now {player.username}.")
+        return
+
+# TODO: Search functionality, build a search bar and return the Country object
 def change_country() -> None:
     """Modifies the existing player object and changes their country"""
 
@@ -486,7 +523,6 @@ def print_question_ids(questions: list[dict]) -> None:
     """Print a list of question ids"""
     ids_list = [question['id'] for question in questions]
     print(*ids_list, sep='\n')
-
 
 def show_high_scores() -> None:
     pass
