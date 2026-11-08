@@ -40,5 +40,7 @@ def prompt_view() -> None:
             break
 
 if __name__ == "__main__":
-    print("\n\nWelcome —\n")
+    print("\n\nWelcome — to Professor Quack.py")
+    print("This quiz application is available as a CLI application, as a discord bot or as an API")
+    print("As of right now, and for grading — only the CLI terminal view is supported")
     prompt_view()
