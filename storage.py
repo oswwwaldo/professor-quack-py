@@ -62,5 +62,11 @@ def save_high_scores(file_name: str = 'high_scores.json', high_scores: list | No
     if high_scores is None:
         high_scores = []
 
-    
-    
+def load_history(file_name: str = 'history.json') -> list[dict]:
+    pass
+
+def save_history(file_name: str = 'history.json', history: dict | None = None, ) -> None:
+    pass
+
+def reset():
+    pass
