@@ -8,6 +8,7 @@ input(), while, import quiz.py functions
 import os
 import shutil
 import time
+from dataclasses import dataclass
 from collections.abc import Callable
 from typing import NamedTuple
 
@@ -21,21 +22,30 @@ import storage
 
 term = Terminal()
 
+# TODO: History related functions should be tied to a Player's object state
+# A NamedTuple cannot change, a data class can
+@dataclass
+class Player:
+    """Used to represent the player in leaderboards"""
+    name: str = "Default user"
+    username: str = "USER"
+    country: str = "USA"
+    high_score: int = 0
 
 class MenuOption(NamedTuple):
     """Used to build menus, pairs a label and an action for returning a function to call"""
     label: str
     action: Callable[[], object] | None = None
-    # Callable is the type hint for functions, we declare an object with a callable function that will return an object (str, None, int etc) or be an empty field
 
 Controller = Callable[[list[MenuOption], str], int] 
-# Type-hinting for handle_keys/input_controllers
+# Type-hinting shorthand for handle_keys/input_controllers
 
 class Link(NamedTuple):
     """Used to print clickable links in the terminal, pairs a text and a url"""
     text: str
     url: str
 
+player: Player = Player()
 questions = storage.load_questions()
 high_scores = storage.load_high_scores()
 
@@ -458,7 +468,10 @@ def view_profile() -> None:
         MenuOption("Return to main menu", None),
     ]
     while True:
-        is_running = prompt_user_input(options, "CLI Terminal Settings")
+
+        menu_title = "CLI: Profile Settings" # default title
+
+        is_running = prompt_user_input(options, menu_title)
         if not is_running:
             break
 
