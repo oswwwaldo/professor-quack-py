@@ -22,8 +22,13 @@ import storage
 
 term = Terminal()
 
-# TODO: History related functions should be tied to a Player's object state
-# A NamedTuple cannot change, a data class can
+
+class Country(NamedTuple):
+    """Used to represent a player's country in the leaderboards"""
+    name: str
+    flag: str
+
+# TODO: History related functions should be tied to a Player's object state 
 @dataclass
 class Player:
     """Used to represent the player in leaderboards"""
@@ -31,11 +36,6 @@ class Player:
     username: str = "USER"
     country: Country = ("United States", "🇺🇸")
     high_score: int = 0
-
-class Country(NamedTuple):
-    """Used to represent a player's country in the leaderboards"""
-    name: str
-    flag: str
 
 #region country list
 # Countries and terrorities under the international country-code standard (ISO 3166-1)
@@ -325,12 +325,30 @@ MAX_NAME_LENGTH = 30
 
 REQUIRED_USERNAME_LENGTH = 4
 
+COUNTRY_BY_NAME: dict[str, Country] = {country.name: country for country in COUNTRIES}
+# Stores a dict of all countries and returns the object by name
+
+player: Player = Player()
+
+players: list[Player] = [
+    player,
+    Player(name="Oswaldo", username="OSW", country=COUNTRY_BY_NAME["Mexico"], high_score=412),
+    Player(name="Amara", username="AMAR", country=COUNTRY_BY_NAME["Nigeria"], high_score=1087),
+    Player(name="Pierre", username="PIER", country=COUNTRY_BY_NAME["France"], high_score=101),
+    Player(name="Kenji", username="KENJ", country=COUNTRY_BY_NAME["Japan"], high_score=763),
+    Player(name="Joseph Robinette Biden Jr.", username="JOE0", country=COUNTRY_BY_NAME["United States"], high_score=1463),
+    Player(name="Sofia", username="SOFI", country=COUNTRY_BY_NAME["Brazil"], high_score=238),
+]
+
 use_keys_controller: bool = False
 use_input_controller: bool = True
 
-player: Player = Player()
 questions = storage.load_questions()
 high_scores = storage.load_high_scores()
+
+def find_player(players: list[Player], username: str) -> Player | None:
+    """Return the player with this username, or None"""
+    return next((p for p in players if p.username == username), None)
 
 def ask_question(question: dict) -> str:
     """Prompts the user with a question, prints the menu and returns the user's returned letter choice"""
