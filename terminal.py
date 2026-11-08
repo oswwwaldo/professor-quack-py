@@ -204,7 +204,7 @@ def prompt_a_length(questions: list[dict]) -> int:
 
     call_controller: Controller = return_active_controller()
     user_input: int = call_controller(options, "Select the number of questions you'd like to practice for")
-    user_choice: str = options[user_input - 1]
+    user_choice: MenuOption = options[user_input - 1]
     print(f"You selected: {user_choice.label}")
 
     if user_choice.label == easter_egg_label:
