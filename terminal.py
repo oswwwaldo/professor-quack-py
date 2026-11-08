@@ -403,8 +403,40 @@ def prompt_a_difficulty() -> str:
 def view_high_scores() -> None:
     print("View high scores called")
 
-def view_all_questions() -> None:
-    print("View questions called")
+# TODO: Consider adding a time.sleep() to the menu build process
+# ? This can probably be split into two functions considering there are two menus here
+# ? Look into using quiz related functions instead
+def view_all_questions(questions: list[dict] = questions) -> None:
+    """Prompt the user into selecting a list of question ids to inspect its key-value pairs, handles two menus"""
+    options: list[MenuOption] = [
+        MenuOption(question["id"], None)
+        for question in questions
+    ]
+
+    while True: 
+        print(f"\n\nThis is a list of all the questions loaded: {len(questions)}, feel free to pick which one you'd like to inspect further")
+        call_controller: Callable = return_active_controller()
+        user_input: int = call_controller(options, "Question Browser")
+
+        selected_question: dict = questions[user_input - 1]
+        keys = list(selected_question.keys())
+
+        question: list[MenuOption] = [
+            MenuOption(key, None)
+            for key in keys
+        ]
+
+        while True:
+            user_input = call_controller(question, f"Inspecting {selected_question['id']}")
+            selected_key: str = keys[user_input - 1]
+            print(selected_question[selected_key])
+
+            if not ask_to_continue("Would you like to go back?"):
+                break
+
+        print("\n\nQuestion Browser:")
+        if not ask_to_continue("Would you like to return to the main menu or inspect another question?"):
+            break
 
 def view_settings() -> None:
     options = [
