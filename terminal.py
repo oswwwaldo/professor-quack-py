@@ -12,11 +12,14 @@ from collections.abc import Callable
 from typing import NamedTuple
 
 import readchar
+from blessed import Terminal
 from readchar import key
 
 import quiz
 import sound
 import storage
+
+term = Terminal()
 
 
 class MenuOption(NamedTuple):
