@@ -45,19 +45,12 @@ class Link(NamedTuple):
     text: str
     url: str
 
+use_keys_controller: bool = False
+use_input_controller: bool = True
+
 player: Player = Player()
 questions = storage.load_questions()
 high_scores = storage.load_high_scores()
-
-def say_hi():
-    print("Hello from terminal.py")
-
-# quiz.print_question_ids(questions)
-
-# print("This is random choice in action")
-# print(quiz.get_random_question(questions))
-
-# storage.read_file('questions.json')
 
 def ask_question(question: dict) -> str:
     """Prompts the user with a question, prints the menu and returns the user's returned letter choice"""
@@ -531,9 +524,6 @@ def print_menu(title: str, options: list[MenuOption]) -> None:
         print(f"[{number}] — {option.label}")
     print_divider("_")
 
-use_keys_controller: bool = False
-use_input_controller: bool = True
-
 def return_active_controller() -> Callable:
     """Returns the function handling the controller that is in use"""
     if (use_keys_controller is True):
@@ -619,9 +609,8 @@ def activate_keys_controller() -> None:
 
     use_keys_controller = True
     use_input_controller = False
-    print(f"The input controller is now {use_keys_controller}")
-    print(f"The keys controller is now {use_input_controller}")
-    print(activate_keys_controller)
+    print(f"The keys controller is now {use_keys_controller}")
+    print(f"The input controller is now {use_input_controller}")
 
 def activate_input_controller() -> None:
     """Switch to input controller, disabling keys controller"""
@@ -630,9 +619,8 @@ def activate_input_controller() -> None:
 
     use_keys_controller = False
     use_input_controller = True
-    print(f"The input controller is now {use_keys_controller}")
-    print(f"The keys controller is now {use_input_controller}")
-    print(activate_input_controller)
+    print(f"The keys controller is now {use_keys_controller}")
+    print(f"The input controller is now {use_input_controller}")
 
 options = [
     MenuOption("Start", start),
