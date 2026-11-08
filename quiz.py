@@ -7,6 +7,12 @@ Pure quiz logic: filter questions, check an answer, compute and format a score, 
 import random
 from typing import Literal
 
+def get_random_number(lower_bound: int, upper_bound: int):
+    """Returns a random number"""
+    return random.randint(lower_bound, upper_bound)
+
+def shuffle_list(list: list) -> list:
+    return random.sample(list, k=len(list))
 
 def get_questions(questions: list[dict]) -> list[dict]:
     """Return questions, note this may not be a useful function"""
@@ -82,6 +88,10 @@ def get_explanation(question: dict, letter: str) -> str:
     check_letter_is_valid(letter)
     return question['explanations'][letter.upper()]
 
+def format_result(question: dict, letter: str) -> str:
+    """Return 'Correct!' or 'Not quite. The correct answer is: ...' plus the explanation"""
+    return "Correct!" if (is_correct(question, letter)) else f"Not quite, the correct answer is {get_correct_letter(question)}\n{get_explanation(question, letter)}"
+
 def calculate_percent(correct: int, total: int) -> float:
     """Return a float percentage based on two ints"""
     if total == 0:
@@ -90,7 +100,7 @@ def calculate_percent(correct: int, total: int) -> float:
 
 def format_score(correct: int, total: int) -> str:
     """Return a string, e.g 'Current score: 3/4 (75.00%)"""
-    return f"Current score: {correct} / {total} ({calculate_percent(correct, total):.2f}%)"
+    return f"{correct} / {total} ({calculate_percent(correct, total):.2f}%)"
 
 def is_high_score(percent: int, high_scores: list[dict]) -> bool:
     pass
