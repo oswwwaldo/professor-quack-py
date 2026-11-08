@@ -50,7 +50,6 @@ def prompt_choice(prompt, options) -> None:
 
 def ask_question(question: dict) -> str:
     """Prompts the user with a question, prints the menu and returns the user's returned letter choice"""
-    print("Ask a question called")
 
     letters = list(question['choices'].keys())
     options = [
@@ -126,22 +125,20 @@ def arcade() -> None:
         filtered_questions: list[dict] = quiz.filter_questions(questions, chosen_difficulty, chosen_category)
         chosen_length: int = prompt_a_length(filtered_questions)
 
-        shuffled_questions = quiz.shuffle_list(filtered_questions)
-        available_questions = shuffled_questions[:chosen_length]
+        available_questions: list[dict] = quiz.get_random_questions(filtered_questions, chosen_length)
 
         if len(available_questions) < 1:
             print("That is so specific! No questions could be found under those qualifiers, please try again.")
             continue
 
-        round_questions = available_questions
-        question = quiz.get_random_question(round_questions)
+        question: dict = quiz.get_random_question(available_questions)
 
         total_answered: int = 0
         correct: int = 0
 
-        print(f"You'll be given an {chosen_length} number of questions in your filtered list! Enjoy {chosen_difficulty} {chosen_category}")
+        print(f"You'll be given {chosen_length} questions in your filtered list! Enjoy {chosen_difficulty} {chosen_category}!")
         
-        for question in round_questions:
+        for question in available_questions:
             total_answered += 1
             selected_answer = ask_question(question)
             result = quiz.format_result(question, selected_answer)
