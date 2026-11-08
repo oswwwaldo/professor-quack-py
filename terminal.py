@@ -21,7 +21,7 @@ import storage
 class MenuOption(NamedTuple):
     """Used to build mennus, pairs a label and an action for returning a function to call"""
     label: str
-    action: Callable[[], object] | None 
+    action: Callable[[], object] | None = None
     # Callable is the type hint for functions, we declare an object with a callable function that will return an object (str, None, int etc) or be an empty field
 
 Controller = Callable[[list[MenuOption], str], int] 
@@ -48,10 +48,29 @@ def say_hi():
 def prompt_choice(prompt, options) -> None:
     pass
 
-def ask_question() -> dict:
+def ask_question(question: dict) -> str:
+    """Prompts the user with a question, prints the menu and returns the user's returned letter choice"""
     print("Ask a question called")
 
-    return quiz.get_random_question(questions)
+    letters = list(question['choices'].keys())
+    options = [
+        MenuOption(label, None)
+        for label in question['choices'].values()
+    ]
+
+    call_controller = return_active_controller()
+    user_input = call_controller(options, f"{question['id']} — {question['question']}")
+
+    return letters[user_input - 1]  
+
+def ask_to_continue(title: str = "What next?") -> bool:
+    """Ask 'Next question / Return', prints the menu and returns True to keep playing"""
+    options = [
+        MenuOption("Next question", next_question),
+        MenuOption("Return to terminal menu", None),
+    ]
+    
+    return prompt_user_input(options, f"{title}")
 
 def start() -> None:
     """Opens a menu with different game modes"""
@@ -73,84 +92,70 @@ def quick_start() -> None:
     """Run quick start mode, immediately throwing a question for the user to answer randomly"""
 
     while True:
-        question = quiz.get_random_question(questions)
+        length = 10
+        round_questions = quiz.get_random_questions(questions, length)
+        total_answered = 0
+        correct = 0
 
-        letters = list(question['choices'].keys())
-        options = [
-            MenuOption(label, None)
-            for label in question['choices'].values()
-        ]
+        print(f"You'll be given {length} random questions based on the SWE Gitbook, goodluck!")
+        
+        for question in round_questions:
+            total_answered += 1
+            selected_answer = ask_question(question)
+            result = quiz.format_result(question, selected_answer)
+            print(result)
 
-        call_controller = return_active_controller()
-        user_input = call_controller(options, f"{question['id']} — {question['question']}")
+            if quiz.is_correct(question, selected_answer):
+                correct += 1
+        
+        score = quiz.format_score(correct, total_answered)
+        print(f"You've scored: {score}")
+        time.sleep(1.5)
+        break
 
-        selected_answer = letters[user_input - 1] 
-
-        # Explore ways to separate the "quiz" and the "reprompt" section, this should be split since this function does too much
-        # It is difficult for me to separate these two at the time of writing this because the while loop structure determines everything pretty much
-        if quiz.is_correct(question, selected_answer):
-            result = "Correct!"
-        else:
-            result = f"Not quite, the correct answer is {quiz.get_correct_letter(question)}"
-        explanation = quiz.get_explanation(question, selected_answer)
-
-        options = [
-            MenuOption("Next question", next_question),
-            MenuOption("Return to terminal menu", None),
-        ]
-
-        continue_while_loop = prompt_user_input(options, f"{result}\n{explanation}")
-        if not continue_while_loop:
-            break
+# TODO: Make it possible for a user to not have to choose a category or difficulty in the first place
+# TODO: Arcade should be infinite questions until the user stops, quick start should be a limited run of questions
+# TODO: Create a filter question
+# TODO: Note that prompt_a_difficulty may not return options sorted in this manner (easy -> med -> hard) but could be (easy -> hard -> med)
 
 def arcade() -> None:
     """Allows the user to select which questions they'd like to go"""
     while True:
+        chosen_category: str = prompt_a_category()
+        chosen_difficulty: str = prompt_a_difficulty()
+        filtered_questions: list[dict] = quiz.filter_questions(questions, chosen_difficulty, chosen_category)
+        chosen_length: int = prompt_a_length(filtered_questions)
 
-        # TODO: Make it possible for a user to not have to choose a category or difficulty in the first place
-        # TODO: Arcade should be infinite questions until the user stops, quick start should be a limited run of questions
-        # TODO: Create a filter question
-        # TODO: Note that prompt_a_difficulty may not return options sorted in this manner (easy -> med -> hard) but could be (easy -> hard -> med)
-
-        chosen_category = prompt_a_category()
-        chosen_difficulty = prompt_a_difficulty()
-        available_questions = quiz.filter_questions(questions, chosen_difficulty, chosen_category)
+        shuffled_questions = quiz.shuffle_list(filtered_questions)
+        available_questions = shuffled_questions[:chosen_length]
 
         if len(available_questions) < 1:
             print("That is so specific! No questions could be found under those qualifiers, please try again.")
             continue
 
-        # TODO: Implement session memory so that a player doesn't answer questions they already came across
-        session_questions = available_questions.copy()
-        question = quiz.get_random_question(session_questions)
+        round_questions = available_questions
+        question = quiz.get_random_question(round_questions)
 
-        print(available_questions)
+        total_answered: int = 0
+        correct: int = 0
 
-        letters = list(question['choices'].keys())
-        options = [
-            MenuOption(label, None)
-            for label in question['choices'].values()
-        ]
+        print(f"You'll be given an {chosen_length} number of questions in your filtered list! Enjoy {chosen_difficulty} {chosen_category}")
+        
+        for question in round_questions:
+            total_answered += 1
+            selected_answer = ask_question(question)
+            result = quiz.format_result(question, selected_answer)
+            print(result)
 
-        call_controller = return_active_controller()
-        user_input = call_controller(options, f"{question['id']} — {question['question']}")
-
-        selected_answer = letters[user_input - 1] 
-
-        if quiz.is_correct(question, selected_answer):
-            result = "Correct!"
-        else:
-            result = f"Not quite, the correct answer is {quiz.get_correct_letter(question)}"
-        explanation = quiz.get_explanation(question, selected_answer)
-
-        options = [
-            MenuOption("Next question", next_question),
-            MenuOption("Return to terminal menu", None),
-        ]
-
-        continue_while_loop = prompt_user_input(options, f"{result}\n{explanation}")
-        if not continue_while_loop:
-            break
+            if quiz.is_correct(question, selected_answer):
+                correct += 1
+            if not ask_to_continue("Ready for another one?"):
+                break
+        
+        score = quiz.format_score(correct, total_answered)
+        print(f"You've scored: {score}")
+        time.sleep(1.5)
+        break
 
 def death_match() -> None:
     """One life, timed intensive mode—this is eligible for writing to high scores"""
@@ -159,6 +164,56 @@ def death_match() -> None:
 
 def next_question() -> None:
     """A placeholder function for the quick_start menu so 'Next question' menu option has a callable"""
+
+def prompt_a_length(questions: list[dict]) -> int:
+    """Prompt the user for how many questions they'd like to answer, prints a menu and returns an int"""
+
+    funny_phrases = [
+        "Literally give me everything, I'm an absolute unit",
+        "I'll take them all",
+        "You want me to give you a number? Are you kidding?",
+        "Imma yolo it",
+        "Imma solo it",
+        "LETSGOOOOOOOO",
+        "The whole buffet. No plate left behind.",
+        "Every question. I fear nothing.",
+        "Gimme the entire question-verse.",
+        "I'm about to become the question.",
+        "All of them. The quiz is mine now.",
+        "One question? Cute. Run me the whole gauntlet.",
+        "Deploy the full question arsenal.",
+        "I choose... yes.",
+        "Maximum quiz. Engage.",
+        "No brakes, just questions.",
+        "The answer is: more questions.",
+        "I'm speedrunning the entire database.",
+        "Pour the questions directly into my brain.",
+        "Release the quacken.",
+    ]
+
+    count: int = len(questions)
+    counts: list[int] = [5, 10, 15]
+    counts += list(range(25, count + 1, 10))
+
+    options = [
+        MenuOption(str(n))
+        for n in counts
+          if n <= count
+    ]
+
+    random_number: int = quiz.get_random_number(0, len(funny_phrases))
+    easter_egg_label: str = funny_phrases[random_number]
+    options.append(MenuOption(easter_egg_label))
+
+    call_controller: Controller = return_active_controller()
+    user_input: int = call_controller(options, "Select the number of questions you'd like to practice for")
+    user_choice: str = options[user_input - 1]
+    print(f"You selected: {user_choice.label}")
+
+    if user_choice.label == easter_egg_label:
+        return count
+    else:
+        return int(user_choice.label)
 
 def prompt_a_category() -> str:
     all_categories = quiz.get_all_categories(questions)
