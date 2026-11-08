@@ -110,47 +110,50 @@ def arcade() -> None:
         # TODO: Make it possible for a user to not have to choose a category or difficulty in the first place
         # TODO: Arcade should be infinite questions until the user stops, quick start should be a limited run of questions
         # TODO: Create a filter question
+        # TODO: Note that prompt_a_difficulty may not return options sorted in this manner (easy -> med -> hard) but could be (easy -> hard -> med)
 
         chosen_category = prompt_a_category()
         chosen_difficulty = prompt_a_difficulty()
         available_questions = quiz.filter_questions(questions, chosen_difficulty, chosen_category)
 
-        # If there aren't any questions that match...
         if len(available_questions) < 1:
-            pass
+            print("That is so specific! No questions could be found under those qualifiers, please try again.")
+            continue
+
+        # TODO: Implement session memory so that a player doesn't answer questions they already came across
+        session_questions = available_questions.copy()
+        question = quiz.get_random_question(session_questions)
 
         print(available_questions)
 
-        # letters = list(question['choices'].keys())
-        # options = [
-        #     MenuOption(label, None)
-        #     for label in question['choices'].values()
-        # ]
+        letters = list(question['choices'].keys())
+        options = [
+            MenuOption(label, None)
+            for label in question['choices'].values()
+        ]
 
-        # call_controller = return_active_controller()
-        # user_input = call_controller(options, f"{question['id']} — {question['question']}")
+        call_controller = return_active_controller()
+        user_input = call_controller(options, f"{question['id']} — {question['question']}")
 
-        # selected_answer = letters[user_input - 1] 
+        selected_answer = letters[user_input - 1] 
 
-        # if quiz.is_correct(question, selected_answer):
-        #     result = "Correct!"
-        # else:
-        #     result = f"Not quite, the correct answer is {quiz.get_correct_letter(question)}"
-        # explanation = quiz.get_explanation(question, selected_answer)
+        if quiz.is_correct(question, selected_answer):
+            result = "Correct!"
+        else:
+            result = f"Not quite, the correct answer is {quiz.get_correct_letter(question)}"
+        explanation = quiz.get_explanation(question, selected_answer)
 
-        # options = [
-        #     MenuOption("Next question", next_question),
-        #     MenuOption("Return to terminal menu", None),
-        # ]
+        options = [
+            MenuOption("Next question", next_question),
+            MenuOption("Return to terminal menu", None),
+        ]
 
-        # continue_while_loop = prompt_user_input(options, f"{result}\n{explanation}")
-        # if not continue_while_loop:
-        #     break
+        continue_while_loop = prompt_user_input(options, f"{result}\n{explanation}")
+        if not continue_while_loop:
+            break
 
 def death_match() -> None:
-    """One life, timed—this is eligible for high scores"""
-
-
+    """One life, timed intensive mode—this is eligible for writing to high scores"""
 #endregion
 
 
