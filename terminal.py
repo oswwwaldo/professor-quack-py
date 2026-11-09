@@ -13,6 +13,7 @@ from typing import NamedTuple
 
 import readchar
 from blessed import Terminal
+from blessed.keyboard import Keystroke
 from readchar import key
 
 import quiz
@@ -53,11 +54,12 @@ players: list[Player] = [
 
 use_keys_controller: bool = False
 use_input_controller: bool = True
+use_timed_controller: bool = False
 
 questions = storage.load_questions()
 high_scores = storage.load_high_scores()
 
-def ask_question(question: dict) -> str:
+def ask_question(question: dict, collect_input: bool = True) -> str | None:
     """Prompts the user with a question, prints the menu and returns the user's returned letter choice"""
 
     letters = list(question['choices'].keys())
@@ -66,10 +68,13 @@ def ask_question(question: dict) -> str:
         for label in question['choices'].values()
     ]
 
-    call_controller = return_active_controller()
-    user_input = call_controller(options, f"{question['id']} — {question['question']}")
-
-    return letters[user_input - 1]  
+    if collect_input is True:
+        call_controller = return_active_controller()
+        user_input = call_controller(options, f"{question['id']} — {question['question']}")
+        return letters[user_input - 1]  
+    elif collect_input is False:
+        print_menu(f"{question['id']} — {question['question']}", options)
+        return None
 
 def ask_to_continue(title: str = "What next?") -> bool:
     """Ask 'Next question / Return', prints the menu and returns True to keep playing"""
@@ -85,7 +90,7 @@ def start() -> None:
     options = [
         MenuOption("Quick start", quick_start), # easiest way to get started
         MenuOption("Arcade", arcade), # allows you to pick which questions
-        MenuOption("Death match", death_match), # only one life, this is eligible for high scores
+        MenuOption("Death match", print_death_contract), # only one life, this is eligible for high scores
         MenuOption("Return to terminal menu", None)
     ]
 
@@ -236,79 +241,141 @@ def get_ascii_art(selection: int) -> str:
     ]
     return ascii_art[selection]
 
-def death_match() -> None:
-    """One life, timed intensive mode—this is eligible for writing to high scores"""
+# TODO: make Esc (key.code == term.KEY_ESCAPE) end the round early.
+# TODO: flash the bar term.bold_yellow for a moment after a correct answer.
+
+START_SECONDS = 15.0
+BONUS_SECONDS = 1
+BONUS_SHOWN_FOR = 0.6
+LOW_TIME_SECONDS = START_SECONDS / 3
+terminal = Terminal()
+
+def wipe_screen() -> None:
+    """Wipe the screen using blessed"""
+    print(terminal.home + terminal.clear, end = " ")
+
+def draw_timer(time_left: float, show_bonus: bool) -> None:
+    """Redraw only the bottom row: a bar, the seconds left, and +0.5s while the bonus is fresh"""
+    bar_width = max(0, min(int(time_left * 3), terminal.width - 20))
+    bar = "█" * bar_width
+    bar = terminal.red(bar) if time_left < LOW_TIME_SECONDS else terminal.green(bar)
+    bonus = terminal.bold_green(f"  +{BONUS_SECONDS}s!") if show_bonus else ""
+
+    with terminal.location(0, terminal.height - 1):
+        print(terminal.clear_eol + f"{bar} {time_left:4.1f}s{bonus}", end = "", flush = True)
+
+
+def prompt_full_screen() -> None:
+    """Clears screen and give the user a simple prompt to go full-screen"""
+    options: list[MenuOption] = [
+        MenuOption("Acknowledged.", None),
+        MenuOption("Chimichanga...", None),
+    ]
+
     while True:
-
         clear_screen()
-        print(get_ascii_art(0))
-        time.sleep(1)
-
-        print("This mode demands your absolute best, get as many questions right and be inducted into the hall of fame. Failure is not an option.")
-        print("Answer as many as you can in ten seconds, you get 0.5s added on for every correct answer.")
-        print("Chose incorrectly? You lose. Ran out of time? You lose.")
-        time.sleep(1.5)
-    
-        options: list[MenuOption] = [
-            MenuOption("I'm ready", next_question),
-            MenuOption("I'm too chicken :C", None)
-        ]
-    
         call_controller: Callable = return_active_controller()
-        user_input: int = call_controller(options, "This is a timed death match — are you ready?")
+        user_input: int = call_controller(options, "This mode is best experienced in full-screen and on typed input mode")
 
-
-        if (user_input == 1):
-            pass
-        elif (user_input == 2):
+        if (user_input):
             break
-        else:
-            continue
 
-        total_answered: int = 0
-        correct: int = 0
+def countdown(seconds: int = 3, display_message: bool = True) -> None:
+    """Print a countdown delayed by time.sleep() with an optional display message"""
+    if display_message: print("The countdown starts now...")
 
-        clear_screen()
-        print("The countdown starts now...")
-        print("3")
+    for second in range(seconds, -1, -1):
+        print(second)
         time.sleep(1)
-        print("2")
-        time.sleep(1)
-        print("1")
-        time.sleep(1)
-        print("0")
-        time.sleep(0.5)
 
-        available_questions: list[dict] = quiz.get_random_questions(questions, 50)
+    time.sleep(0.5)
 
-        for question in available_questions:
+def print_death_contract() -> None:
+    prompt_full_screen()
+    clear_screen()
+    
+    print(get_ascii_art(0))
+    time.sleep(1)
+
+    print("\nThis mode demands your absolute best, get as many questions right and be inducted into the hall of fame. Failure is not an option.")
+    print("Answer as many as you can in ten seconds, you get 0.5s added on for every correct answer.")
+    print("Chose incorrectly? You lose. Ran out of time? You lose.")
+    time.sleep(1)
+
+    options: list[MenuOption] = [
+        MenuOption("I'm ready", death_match),
+        MenuOption("I'm too chicken :C", None)
+    ]
+
+    while True:
+        is_running = prompt_user_input(options, "This is a timed death match — are you ready?")
+        if not is_running:
+            break
+
+def death_match(questions: list[dict] = questions) -> None:
+    total_answered: int = 0
+    correct: int = 0
+    round_score: int = 0
+
+    wipe_screen()
+    countdown()
+    deadline: float = time.monotonic() + START_SECONDS
+    bonus_until: float = 0.0
+    round_outcome: str = ""
+    available_questions: list[dict] = quiz.get_random_questions(questions, 50)
+
+    # TODO: Look into bugs involving the ENTER key
+    # TODO: Does not account for when someone answers all the questions
+    # TODO: Should be easier questions
+    with terminal.fullscreen(), terminal.cbreak(), terminal.hidden_cursor():
+        for number, question in enumerate(available_questions):
+            while terminal.inkey(timeout=0): pass # clear the buffer to ensure we leave with only one key at a time per loop
+            # clear_screen() # Wipe the previous frame off of memory
+            wipe_screen() # Uses the blessed -> clear method on the terminal
+            ask_question(question, collect_input = False) # Find a better way to make this code readable (collect_input param implies we DONT collect key input)
+            letters = list(question["choices"].keys())
             
-            total_answered += 1
-            selected_answer = ask_question(question)
-            # for seconds in [3, 2, 1]:
-            #     print(f"\rTime left: {seconds}s ", end="", flush=True)
-            #     time.sleep(1)
-            #     print("\rTime's up!")
-            
-            result = quiz.format_result(question, selected_answer)
-            print(result)
+            while True: # Start a loop for the question itself, resets the timer
+                now: float = time.monotonic() # Grab the time the timer 'resets' and define it as our starting point
+                time_left: float = deadline - now # Update the time with how much has elapsed
 
-            if quiz.is_correct(question, selected_answer):
-                correct += 1
-                sound.play_correct()
-            else:
-                print(get_ascii_art(1))
-                print("You died. You choose poorly.")
-                sound.play_death()
-                time.sleep(2)
-                score = quiz.format_score(correct, total_answered)
-                print(f"You've scored: {score}")
-                time.sleep(1.5)
-                if not ask_to_continue("Ready for another one?"):
+                if time_left <= 0: 
+                    round_outcome = "You ran out of time..."
                     break
-        
-        time.sleep(2)
-        break
+
+                draw_timer(time_left, now < bonus_until) # Update the timer every iteration
+                key: Keystroke = terminal.inkey(timeout=0.05) # During the loop, pause for 0.05s and listen for any new keys before redrawing the frame
+
+                if not key:
+                    continue
+                if not key.isdigit() or not 1 <= int(key) <= len(letters):
+                    continue 
+
+                selected_answer = letters[int(key) - 1]   
+
+                if selected_answer:
+                    with terminal.location(0, terminal.height - 2):
+                        print(terminal.clear_eol + f"DEBUG got: {selected_answer!r}", end="", flush=True)
+                        print(terminal.clear_eol + question['choices'][selected_answer], end="", flush=True)
+
+                if selected_answer.lower() in ('a', 'b', 'c', 'd'):
+                    total_answered += 1
+
+                    if (quiz.get_correct_letter(question) == selected_answer.upper()):
+                        correct += 1
+                        deadline += BONUS_SECONDS 
+                        bonus_until = time.monotonic() + BONUS_SHOWN_FOR
+                        sound.play_correct()
+                        break
+                    else:
+                        round_outcome = "Wrong answer!"
+                        print(get_ascii_art(1))
+                        print("You died. You chose poorly.")
+                        sound.play_death()
+                        time.sleep(2)
+                        percentage = quiz.format_score(correct, total_answered)
+                        print(f"{round_outcome} You've scored: {percentage}, earning a total score of... {round_score}")
+                        break
 #endregion
 
 
@@ -457,6 +524,17 @@ def view_settings() -> None:
         if not is_running:
             break
 
+# TODO: This function should return a True/False depending on how the user interacted with the function
+# def warn_windows_only_support(function: Callable) -> bool:
+#     options = [
+#         MenuOption("Proceed — I use Windows", function),
+#         MenuOption("Return to main menu", None),
+#     ]
+#     while True:
+#         is_running = prompt_user_input(options, "This feature is supported by Windows only")
+#         if not is_running:
+#             break
+
 def view_profile() -> None:
     while True:
         options = [
@@ -514,6 +592,10 @@ def change_username() -> None:
 def change_country() -> None:
     """Modifies the existing player object and changes their country"""
 
+# TODO: Prefix, substring matches for a search bar functionality (allow Country matches for instance)
+def search(term: str) -> None:
+    pass
+
 def view_credits() -> None:
     """View credits menu with three second delay"""
     print_credits()
@@ -556,7 +638,7 @@ def print_credits() -> None:
 def print_menu(title: str, options: list[MenuOption]) -> None:
     """Print a reuseable menu using the MenuOption class"""
     print(f'\n{title}:')
-    for number, option in enumerate(options, start=1):
+    for number, option in enumerate(options, start = 1):
         print(f"[{number}] — {option.label}")
     print_divider("_")
 
@@ -566,9 +648,12 @@ def return_active_controller() -> Callable:
         return handle_keys_controller
     elif (use_input_controller is True):
         return handle_input_controller
+    elif (use_timed_controller is True):
+        return handle_timed_controller
     else:
         raise NameError("No controller found in use")
 
+# TODO: This function shouldn't return a boolean, why would we need a boolean?
 def prompt_user_input(options: list[MenuOption], title: str = "") -> bool:
     """Let the user pick an option with the active controller and run it. Returns False when the option means 'leave'"""
     call_controller = return_active_controller()
@@ -638,25 +723,53 @@ def handle_input_controller(options: list[MenuOption], title: str = "") -> int:
 
         return choice
 
+# TODO: Abstract some of the logic from one_life into here
+# TODO: Switch the print menu parameters around
+def handle_timed_controller(options: list[MenuOption], title: str = "") -> int:
+    """Designed specifically for death_match()"""
+    print_menu(title, options)
+    return 2
+
+# TODO: These functions repeat a lot of the same code, break this down later.
 def activate_keys_controller() -> None:
-    """Switch to keys controller, disabling input controller"""
+    """Switch to keys controller, disabling input and timed controller"""
     global use_keys_controller
     global use_input_controller
+    global use_timed_controller
 
     use_keys_controller = True
     use_input_controller = False
+    use_timed_controller = False
     print(f"The keys controller is now {use_keys_controller}")
     print(f"The input controller is now {use_input_controller}")
+    print(f"The timed controller is now {use_input_controller}")
+
 
 def activate_input_controller() -> None:
-    """Switch to input controller, disabling keys controller"""
+    """Switch to input controller, disabling keys and timed controller"""
     global use_keys_controller
     global use_input_controller
+    global use_timed_controller
 
     use_keys_controller = False
     use_input_controller = True
+    use_timed_controller = False
     print(f"The keys controller is now {use_keys_controller}")
     print(f"The input controller is now {use_input_controller}")
+    print(f"The timed controller is now {use_input_controller}")
+
+def activate_timed_controller() -> None:
+    """Switch to input controller, disabling keys and timed controller"""
+    global use_keys_controller
+    global use_input_controller
+    global use_timed_controller
+
+    use_keys_controller = False
+    use_input_controller = False
+    use_timed_controller = True
+    print(f"The keys controller is now {use_keys_controller}")
+    print(f"The input controller is now {use_input_controller}")
+    print(f"The timed controller is now {use_input_controller}")
 
 options = [
     MenuOption("Start", start),
