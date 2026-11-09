@@ -17,3 +17,22 @@ I gained a deeper understanding of classes and type hints, especially `Callable`
 I created a `MenuOption` class using `NamedTuple` to pair a `label` with an `action`. The `label` is a string, and the `action` is a `Callable`, which lets the program call the function associated with the option the user selects. Type hints make the intended structure clear and help catch mistakes when creating menu options.
 
 Some options, such as “Return to main menu,” don’t need an action — so I typed the action as `Callable[[], object] | None` and gave it a default value of `None`. That means an action can be a no-argument function or None; when it is None, the menu handles it as an exit option.
+
+## One additional reflection
+
+As I was working on the `death_match` mode, I came across a very interesting and frustrating bug.
+
+So the way `death_match` works, compared to `arcade` or `quick_start` is that `death_match` relies on wiping, redrawing the screen and listening for inputs constantly in order to mimic the feel of a timed question where only have 10s to answer.
+
+The way I listened for inputs was by checking the blessed.keyboard.Keystroke object and verifying that against this qualifier:
+
+```py
+selected_answer: Keystroke = terminal.inkey(timeout=0.05)
+
+if selected_answer.lower() in 'abcd':
+```
+
+The problem is that if there is no key collected (which is expected) the Keystroke returns an empty str -> ''.
+But the in operator still counts this as true, in Python an empty string is in every string. In 'abcd', 'xyz' or '' — Python sees '' in all three string objects.
+
+I just thought that was wild and needed to be said in the future.
