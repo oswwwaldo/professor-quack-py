@@ -58,7 +58,7 @@ def load_high_scores(file_name: str = 'high_scores.json') -> list[dict]:
 
     return json_file
 
-def save_high_scores(file_name: str = 'high_scores.json', high_scores: list | None = None, ) -> None:
+def save_high_scores(file_name: str = 'high_scores.json', high_scores: list[dict] | None = None, ) -> None:
     if high_scores is None:
         high_scores = []
 
