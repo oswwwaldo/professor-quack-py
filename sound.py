@@ -5,6 +5,8 @@ import os
 if os.name == "nt":
     import winsound
 
+# TODO: Import boss music, combat, intro, notification, faaha, levle-up, quest_update and skill-up
+
 def play_correct() -> None:
     """A short ding for a correct answer"""
     if winsound:
@@ -31,26 +33,3 @@ def toggle_sfx() -> None:
 
 def toggle_music() -> None:
     print("Hi music from sound.py")
-
-# def warn_windows_only_support() -> None:
-#     options = [
-#         MenuOption("Proceed — I use Windows", toggle),
-#         MenuOption("Return to main menu", None),
-#     ]
-#     while True:
-#         is_running = prompt_user_input(options, "This feature is supported by Windows only")
-#         if not is_running:
-#             break
-
-# def toggle_music() -> None:
-#     import winsound
-
-#     options = [
-#         MenuOption("Set your profile's name", enable_background_music),
-#         MenuOption("Enable background music", enable_background_music),
-#         MenuOption("Return to main menu", None),
-#     ]
-#     while True:
-#         is_running = prompt_user_input(options, "CLI Terminal Settings")
-#         if not is_running:
-#             break
