@@ -335,6 +335,7 @@ def death_match(questions: list[dict] = questions) -> None:
             ask_question(question, collect_input = False) # Find a better way to make this code readable (collect_input param implies we DONT collect key input)
             letters = list(question["choices"].keys())
             
+            if round_outcome: break
             while True: # Start a loop for the question itself, resets the timer
                 now: float = time.monotonic() # Grab the time the timer 'resets' and define it as our starting point
                 time_left: float = deadline - now # Update the time with how much has elapsed
