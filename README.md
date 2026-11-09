@@ -4,6 +4,8 @@ A quiz app for Marcy Lab School SWE students based on the 2026 Gitbook, availabl
 
 Eventually this quiz app will expand to new technologies, languages and tooling.
 
+Please note for grading purposes, only interact with the CLI terminal view. Furthermore, a lot of features were attempted and some at varying states of completion.
+
 ## Installation
 
 Having issues getting this repository set up? Refer to this quick walk-through, if you are still experencing problems feel free to create an issue in the repository  and report your problem!
@@ -54,7 +56,7 @@ python main.py
 
 On macOS or Linux, use `python3` if `python` isn't found.
 
-Choose options by typing their number and pressing Enter. To use the arrow keys instead, open **Settings** and switch controllers. Arrow-key mode works in most modern terminals, including Windows Terminal and VS Code's terminal.
+Choose options by typing their number and pressing Enter. To use the arrow keys instead, open **Settings** and switch controllers. Arrow-key mode works in most modern terminals, including Windows Terminal and VS Code's terminal though keep in mind that this mode is not fully supported yet.
 
 ## Running the tests
 
@@ -78,6 +80,14 @@ Keep in mind this is a pending feature that does not represent the intended fini
 
 Because.
 
+## What is this project?
+
+It is a quiz application meant to help fellows at the Marcy Lab School learn more about Gitbook-covered material. The questions were generated using Claude to be relevant and on varying degrees of difficulty and categories.
+
+I am still looking into whether this project could be genuinely useful for my target audience but in the future I think I'd like to add some kind of physical station with a Raspberry Pico machine. The API porition of this project is an endpoint for that machine to work with over the internet and the discord bot is meant to be a friendly and easy way to get into 'Professor Quack'.
+
+I will look into conducting qualitive surveys and interviews to gauge how much of an investment this project should cost me over my year at the Marcy Lab.
+
 ## Design principles
 
 - YAGNI — you aren't going to need it
@@ -92,18 +102,17 @@ Because.
 
 A function earns its place when it... names an intent, hides an edge case, is testable and gives you one place to change behavior
 
-'Death' match round where you must answer questions as quickly as possible within a timer this determines your high score'
-
-You need to track question history, and build a list of questions that's been answered either correctly or incorrectly and attach it
-to the player state, but that is beyond the MVP so maybe for the future...
-
 ## Overview
 
 ![Architecture](Untitled-2026-11-7-1632.png)
 
 The app communicates either as a CLI terminal application, discord bot or as an API. All three views have slightly different functionality.
 
-## Core
+## Features for the future
+
+- Track question history (build a list of correct/incorrect questions).
+
+### Core
 
 - Multiple-choice questions
 - Score display (for example, `2/3 (67%)`)
@@ -113,17 +122,17 @@ The app communicates either as a CLI terminal application, discord bot or as an 
 - Show answered correctly questions
 - Show answered incorrectly questions
 
-## Categories and Difficulty
+### Categories and Difficulty
 
 - Add category and difficulty fields to each question dictionary.
 - Filter the question list by category and difficulty.
 - Remove questions from review/study
 
-## Timer
+### Timer
 
 - Use the `discord.py` view `on_timeout` method.
 
-## Announcements
+### Announcements
 
 - Use `discord.ext.tasks` to run a loop once a day.
 - Check dates and leaderboard information.
@@ -132,33 +141,32 @@ The app communicates either as a CLI terminal application, discord bot or as an 
   - Allagi L&D Landing Page → `#swe-allagi`
   - Coaching Landing Page → `#swe-telos`
 
-## Code Challenges
+### Code Challenges
 
 - Codewars, HackerRank, etc.
 
-## Pull Request Reviewer
+### Pull Request Reviewer
+
+Exclusively on the Discord bot, this would help fellows find people to review their code on discord.
 
 - GitHub webhooks or API
 
-## Explain Code
+### Explain Code
 
 - Google AI Studio API calls
 
-## Technologies and Tools
+### Technologies and Tools
 
 - Pydantic
-- Docker
 - pytest
 - GitHub Actions
+- FastAPI
+- Docker
 - Google AI Studio
 - Cloudflare Workers
+
 - Anki (FSRS)
 - QuizAPI.io
-- FastAPI
-
-## Answer Matching
-
-- Use the Levenshtein algorithm to handle possible search queries
 
 ## Planned Slash Commands
 
