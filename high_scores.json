@@ -1,27 +1,37 @@
 [
-    {
-        "id": "2034ij2",
-        "name": "JOE",
-        "timed_high_score": 866
-    },
-    {
-        "id": "2034ij2",
-        "name": "SMT",
-        "timed_high_score": 324
-    },
-    {
-        "id": "2034ij2",
-        "name": "CHR",
-        "timed_high_score": 227
-    },
-    {
-        "id": "2034ij2",
-        "name": "OSW",
-        "timed_high_score": 34
-    },
-    {
-        "id": "2034ij2",
-        "name": "JUL",
-        "timed_high_score": 684
+  {
+    "id": "2034ij2",
+    "username": "JOEO",
+    "high_scores": {
+      "death_match": 100
     }
+  },
+  {
+    "id": "2034ij2",
+    "username": "SMTP",
+    "high_scores": {
+      "death_match": 100
+    }
+  },
+  {
+    "id": "2034ij2",
+    "username": "CHRA",
+    "high_scores": {
+      "death_match": 100
+    }
+  },
+  {
+    "id": "2034ij2",
+    "username": "OSWA",
+    "high_scores": {
+      "death_match": 100
+    }
+  },
+  {
+    "id": "2034ij2",
+    "username": "JULY",
+    "high_scores": {
+      "death_match": 100
+    }
+  }
 ]

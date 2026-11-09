@@ -8,7 +8,6 @@ input(), while, import quiz.py functions
 import os
 import shutil
 import time
-from dataclasses import dataclass
 from collections.abc import Callable
 from typing import NamedTuple
 
@@ -19,293 +18,9 @@ from readchar import key
 import quiz
 import sound
 import storage
+from countries import COUNTRY_BY_NAME
+from player import Player
 
-term = Terminal()
-
-
-class Country(NamedTuple):
-    """Used to represent a player's country in the leaderboards"""
-    name: str
-    flag: str
-
-# TODO: History related functions should be tied to a Player's object state 
-@dataclass
-class Player:
-    """Used to represent the player in leaderboards"""
-    name: str = "Default user"
-    username: str = "USER"
-    country: Country = ("United States", "🇺🇸")
-    high_score: int = 0
-
-#region country list
-# Countries and terrorities under the international country-code standard (ISO 3166-1)
-COUNTRIES: list[Country] = [
-    Country("United States", "🇺🇸"),
-    Country("United Kingdom", "🇬🇧"),
-    Country("Canada", "🇨🇦"),
-    Country("Mexico", "🇲🇽"),
-    Country("Brazil", "🇧🇷"),
-    Country("France", "🇫🇷"),
-    Country("Germany", "🇩🇪"),
-    Country("India", "🇮🇳"),
-    Country("Japan", "🇯🇵"),
-    Country("Australia", "🇦🇺"),
- 
-    Country("Afghanistan", "🇦🇫"),
-    Country("Åland Islands", "🇦🇽"),
-    Country("Albania", "🇦🇱"),
-    Country("Algeria", "🇩🇿"),
-    Country("American Samoa", "🇦🇸"),
-    Country("Andorra", "🇦🇩"),
-    Country("Angola", "🇦🇴"),
-    Country("Anguilla", "🇦🇮"),
-    Country("Antarctica", "🇦🇶"),
-    Country("Antigua and Barbuda", "🇦🇬"),
-    Country("Argentina", "🇦🇷"),
-    Country("Armenia", "🇦🇲"),
-    Country("Aruba", "🇦🇼"),
-    Country("Austria", "🇦🇹"),
-    Country("Azerbaijan", "🇦🇿"),
-    Country("Bahamas", "🇧🇸"),
-    Country("Bahrain", "🇧🇭"),
-    Country("Bangladesh", "🇧🇩"),
-    Country("Barbados", "🇧🇧"),
-    Country("Belarus", "🇧🇾"),
-    Country("Belgium", "🇧🇪"),
-    Country("Belize", "🇧🇿"),
-    Country("Benin", "🇧🇯"),
-    Country("Bermuda", "🇧🇲"),
-    Country("Bhutan", "🇧🇹"),
-    Country("Bolivia", "🇧🇴"),
-    Country("Bosnia and Herzegovina", "🇧🇦"),
-    Country("Botswana", "🇧🇼"),
-    Country("Bouvet Island", "🇧🇻"),
-    Country("British Indian Ocean Territory", "🇮🇴"),
-    Country("British Virgin Islands", "🇻🇬"),
-    Country("Brunei", "🇧🇳"),
-    Country("Bulgaria", "🇧🇬"),
-    Country("Burkina Faso", "🇧🇫"),
-    Country("Burundi", "🇧🇮"),
-    Country("Cambodia", "🇰🇭"),
-    Country("Cameroon", "🇨🇲"),
-    Country("Cape Verde", "🇨🇻"),
-    Country("Caribbean Netherlands", "🇧🇶"),
-    Country("Cayman Islands", "🇰🇾"),
-    Country("Central African Republic", "🇨🇫"),
-    Country("Chad", "🇹🇩"),
-    Country("Chile", "🇨🇱"),
-    Country("China", "🇨🇳"),
-    Country("Christmas Island", "🇨🇽"),
-    Country("Cocos (Keeling) Islands", "🇨🇨"),
-    Country("Colombia", "🇨🇴"),
-    Country("Comoros", "🇰🇲"),
-    Country("Cook Islands", "🇨🇰"),
-    Country("Costa Rica", "🇨🇷"),
-    Country("Côte d'Ivoire", "🇨🇮"),
-    Country("Croatia", "🇭🇷"),
-    Country("Cuba", "🇨🇺"),
-    Country("Curaçao", "🇨🇼"),
-    Country("Cyprus", "🇨🇾"),
-    Country("Czechia", "🇨🇿"),
-    Country("Denmark", "🇩🇰"),
-    Country("Djibouti", "🇩🇯"),
-    Country("Dominica", "🇩🇲"),
-    Country("Dominican Republic", "🇩🇴"),
-    Country("DR Congo", "🇨🇩"),
-    Country("Ecuador", "🇪🇨"),
-    Country("Egypt", "🇪🇬"),
-    Country("El Salvador", "🇸🇻"),
-    Country("Equatorial Guinea", "🇬🇶"),
-    Country("Eritrea", "🇪🇷"),
-    Country("Estonia", "🇪🇪"),
-    Country("Eswatini", "🇸🇿"),
-    Country("Ethiopia", "🇪🇹"),
-    Country("Falkland Islands", "🇫🇰"),
-    Country("Faroe Islands", "🇫🇴"),
-    Country("Fiji", "🇫🇯"),
-    Country("Finland", "🇫🇮"),
-    Country("French Guiana", "🇬🇫"),
-    Country("French Polynesia", "🇵🇫"),
-    Country("French Southern Territories", "🇹🇫"),
-    Country("Gabon", "🇬🇦"),
-    Country("Gambia", "🇬🇲"),
-    Country("Georgia", "🇬🇪"),
-    Country("Ghana", "🇬🇭"),
-    Country("Gibraltar", "🇬🇮"),
-    Country("Greece", "🇬🇷"),
-    Country("Greenland", "🇬🇱"),
-    Country("Grenada", "🇬🇩"),
-    Country("Guadeloupe", "🇬🇵"),
-    Country("Guam", "🇬🇺"),
-    Country("Guatemala", "🇬🇹"),
-    Country("Guernsey", "🇬🇬"),
-    Country("Guinea", "🇬🇳"),
-    Country("Guinea-Bissau", "🇬🇼"),
-    Country("Guyana", "🇬🇾"),
-    Country("Haiti", "🇭🇹"),
-    Country("Heard and McDonald Islands", "🇭🇲"), # mc whopper
-    Country("Honduras", "🇭🇳"),
-    Country("Hong Kong", "🇭🇰"),
-    Country("Hungary", "🇭🇺"),
-    Country("Iceland", "🇮🇸"),
-    Country("Indonesia", "🇮🇩"),
-    Country("Iran", "🇮🇷"),
-    Country("Iraq", "🇮🇶"),
-    Country("Ireland", "🇮🇪"),
-    Country("Isle of Man", "🇮🇲"),
-    Country("Israel", "🇮🇱"),
-    Country("Italy", "🇮🇹"),
-    Country("Jamaica", "🇯🇲"),
-    Country("Jersey", "🇯🇪"),
-    Country("Jordan", "🇯🇴"),
-    Country("Kazakhstan", "🇰🇿"),
-    Country("Kenya", "🇰🇪"),
-    Country("Kiribati", "🇰🇮"),
-    Country("Kosovo", "🇽🇰"),
-    Country("Kuwait", "🇰🇼"),
-    Country("Kyrgyzstan", "🇰🇬"),
-    Country("Laos", "🇱🇦"),
-    Country("Latvia", "🇱🇻"),
-    Country("Lebanon", "🇱🇧"),
-    Country("Lesotho", "🇱🇸"),
-    Country("Liberia", "🇱🇷"),
-    Country("Libya", "🇱🇾"),
-    Country("Liechtenstein", "🇱🇮"),
-    Country("Lithuania", "🇱🇹"),
-    Country("Luxembourg", "🇱🇺"),
-    Country("Macau", "🇲🇴"),
-    Country("Madagascar", "🇲🇬"),
-    Country("Malawi", "🇲🇼"),
-    Country("Malaysia", "🇲🇾"),
-    Country("Maldives", "🇲🇻"),
-    Country("Mali", "🇲🇱"),
-    Country("Malta", "🇲🇹"),
-    Country("Marshall Islands", "🇲🇭"),
-    Country("Martinique", "🇲🇶"),
-    Country("Mauritania", "🇲🇷"),
-    Country("Mauritius", "🇲🇺"),
-    Country("Mayotte", "🇾🇹"),
-    Country("Micronesia", "🇫🇲"),
-    Country("Moldova", "🇲🇩"),
-    Country("Monaco", "🇲🇨"),
-    Country("Mongolia", "🇲🇳"),
-    Country("Montenegro", "🇲🇪"),
-    Country("Montserrat", "🇲🇸"),
-    Country("Morocco", "🇲🇦"),
-    Country("Mozambique", "🇲🇿"),
-    Country("Myanmar", "🇲🇲"),
-    Country("Namibia", "🇳🇦"),
-    Country("Nauru", "🇳🇷"),
-    Country("Nepal", "🇳🇵"),
-    Country("Netherlands", "🇳🇱"),
-    Country("New Caledonia", "🇳🇨"),
-    Country("New Zealand", "🇳🇿"),
-    Country("Nicaragua", "🇳🇮"),
-    Country("Niger", "🇳🇪"),
-    Country("Nigeria", "🇳🇬"),
-    Country("Niue", "🇳🇺"),
-    Country("Norfolk Island", "🇳🇫"),
-    Country("North Korea", "🇰🇵"),
-    Country("North Macedonia", "🇲🇰"),
-    Country("Northern Mariana Islands", "🇲🇵"),
-    Country("Norway", "🇳🇴"),
-    Country("Oman", "🇴🇲"),
-    Country("Pakistan", "🇵🇰"),
-    Country("Palau", "🇵🇼"),
-    Country("Palestine", "🇵🇸"), # free palestine
-    Country("Panama", "🇵🇦"),
-    Country("Papua New Guinea", "🇵🇬"),
-    Country("Paraguay", "🇵🇾"),
-    Country("Peru", "🇵🇪"),
-    Country("Philippines", "🇵🇭"),
-    Country("Pitcairn Islands", "🇵🇳"),
-    Country("Poland", "🇵🇱"),
-    Country("Portugal", "🇵🇹"),
-    Country("Puerto Rico", "🇵🇷"),
-    Country("Qatar", "🇶🇦"),
-    Country("Republic of the Congo", "🇨🇬"),
-    Country("Réunion", "🇷🇪"),
-    Country("Romania", "🇷🇴"),
-    Country("Russia", "🇷🇺"),
-    Country("Rwanda", "🇷🇼"),
-    Country("Saint Barthélemy", "🇧🇱"),
-    Country("Saint Helena", "🇸🇭"),
-    Country("Saint Kitts and Nevis", "🇰🇳"),
-    Country("Saint Lucia", "🇱🇨"),
-    Country("Saint Martin", "🇲🇫"),
-    Country("Saint Pierre and Miquelon", "🇵🇲"),
-    Country("Saint Vincent and the Grenadines", "🇻🇨"),
-    Country("Samoa", "🇼🇸"),
-    Country("San Marino", "🇸🇲"),
-    Country("São Tomé and Príncipe", "🇸🇹"),
-    Country("Saudi Arabia", "🇸🇦"),
-    Country("Senegal", "🇸🇳"),
-    Country("Serbia", "🇷🇸"),
-    Country("Seychelles", "🇸🇨"),
-    Country("Sierra Leone", "🇸🇱"),
-    Country("Singapore", "🇸🇬"),
-    Country("Sint Maarten", "🇸🇽"),
-    Country("Slovakia", "🇸🇰"),
-    Country("Slovenia", "🇸🇮"),
-    Country("Solomon Islands", "🇸🇧"),
-    Country("Somalia", "🇸🇴"),
-    Country("South Africa", "🇿🇦"),
-    Country("South Georgia and the South Sandwich Islands", "🇬🇸"),
-    Country("South Korea", "🇰🇷"),
-    Country("South Sudan", "🇸🇸"),
-    Country("Spain", "🇪🇸"),
-    Country("Sri Lanka", "🇱🇰"),
-    Country("Sudan", "🇸🇩"),
-    Country("Suriname", "🇸🇷"),
-    Country("Svalbard and Jan Mayen", "🇸🇯"),
-    Country("Sweden", "🇸🇪"),
-    Country("Switzerland", "🇨🇭"),
-    Country("Syria", "🇸🇾"),
-    Country("Taiwan", "🇹🇼"),
-    Country("Tajikistan", "🇹🇯"),
-    Country("Tanzania", "🇹🇿"),
-    Country("Thailand", "🇹🇭"),
-    Country("Timor-Leste", "🇹🇱"),
-    Country("Togo", "🇹🇬"),
-    Country("Tokelau", "🇹🇰"),
-    Country("Tonga", "🇹🇴"),
-    Country("Trinidad and Tobago", "🇹🇹"),
-    Country("Tunisia", "🇹🇳"),
-    Country("Türkiye", "🇹🇷"),
-    Country("Turkmenistan", "🇹🇲"),
-    Country("Turks and Caicos Islands", "🇹🇨"),
-    Country("Tuvalu", "🇹🇻"),
-    Country("U.S. Outlying Islands", "🇺🇲"),
-    Country("U.S. Virgin Islands", "🇻🇮"),
-    Country("Uganda", "🇺🇬"),
-    Country("Ukraine", "🇺🇦"),
-    Country("United Arab Emirates", "🇦🇪"),
-    Country("Uruguay", "🇺🇾"),
-    Country("Uzbekistan", "🇺🇿"),
-    Country("Vanuatu", "🇻🇺"),
-    Country("Vatican City", "🇻🇦"),
-    Country("Venezuela", "🇻🇪"),
-    Country("Vietnam", "🇻🇳"),
-    Country("Wallis and Futuna", "🇼🇫"),
-    Country("Western Sahara", "🇪🇭"),
-    Country("Yemen", "🇾🇪"),
-    Country("Zambia", "🇿🇲"),
-    Country("Zimbabwe", "🇿🇼"),
-
-    Country("European Union", "🇪🇺"),
-    Country("United Nations", "🇺🇳"),
-
-    Country("White flag", "🏳️"),
-    Country("Black flag", "🏴"),
-    Country("Transgender flag", "🏳️‍⚧️"),
-    Country("Rainbow flag", "🏳️‍🌈"),
-    Country("Triangular flag", "🚩"),
-    Country("Pirate flag", "🏴‍☠️"),
-    Country("Chequered flag", "🏁"),
-    Country("Construction", "🚧"),
-    Country("Duckland", "🪿")
-]
-#endregion
 
 class MenuOption(NamedTuple):
     """Used to build menus, pairs a label and an action for returning a function to call"""
@@ -322,11 +37,7 @@ class Link(NamedTuple):
 
 MIN_NAME_LENGTH = 2
 MAX_NAME_LENGTH = 30
-
 REQUIRED_USERNAME_LENGTH = 4
-
-COUNTRY_BY_NAME: dict[str, Country] = {country.name: country for country in COUNTRIES}
-# Stores a dict of all countries and returns the object by name
 
 player: Player = Player()
 
@@ -336,8 +47,8 @@ players: list[Player] = [
     Player(name="Amara", username="AMAR", country=COUNTRY_BY_NAME["Nigeria"], high_score=1087),
     Player(name="Pierre", username="PIER", country=COUNTRY_BY_NAME["France"], high_score=101),
     Player(name="Kenji", username="KENJ", country=COUNTRY_BY_NAME["Japan"], high_score=763),
-    Player(name="Joseph Robinette Biden Jr.", username="JOE0", country=COUNTRY_BY_NAME["United States"], high_score=1463),
     Player(name="Sofia", username="SOFI", country=COUNTRY_BY_NAME["Brazil"], high_score=238),
+    Player(name="Joseph Robinette Biden Jr.", username="JOE0", country=COUNTRY_BY_NAME["United States"], high_score=1463),
 ]
 
 use_keys_controller: bool = False
@@ -345,10 +56,6 @@ use_input_controller: bool = True
 
 questions = storage.load_questions()
 high_scores = storage.load_high_scores()
-
-def find_player(players: list[Player], username: str) -> Player | None:
-    """Return the player with this username, or None"""
-    return next((p for p in players if p.username == username), None)
 
 def ask_question(question: dict) -> str:
     """Prompts the user with a question, prints the menu and returns the user's returned letter choice"""
@@ -752,12 +459,12 @@ def view_settings() -> None:
 
 def view_profile() -> None:
     while True:
-    options = [
-            MenuOption(f"Name: {player.name}", change_name),
-            MenuOption(f"Username: {player.username}", change_username),
-            MenuOption(f"Country: {player.country.name}", change_country),
-        MenuOption("Return to main menu", None),
-    ]
+        options = [
+                MenuOption(f"Name: {player.name}", change_name),
+                MenuOption(f"Username: {player.username}", change_username),
+                MenuOption(f"Country: {player.country.name}", change_country),
+            MenuOption("Return to main menu", None),
+        ]
 
         menu_title = "CLI: Profile Settings" # default title
 
